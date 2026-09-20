@@ -1,0 +1,63 @@
+# .NET build output
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# NuGet and local tooling
+*.nupkg
+*.snupkg
+packages/
+artifacts/
+TestResults/
+project.lock.json
+project.fragment.lock.json
+
+# Local configuration and secrets
+appsettings.*.local.json
+secrets.json
+.env
+.env.*
+!.env.example
+
+# SQLite and other local data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Node / mini-program tooling
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+
+# WeChat mini-program private project settings
+miniprogram/project.private.config.json
+miniprogram/.eslintrc.local.*
+
+# Coverage and generated documentation
+coverage/
+*.coverage
+*.coveragexml
+*.pdb
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
