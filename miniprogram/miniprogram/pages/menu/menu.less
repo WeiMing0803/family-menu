@@ -1,0 +1,137 @@
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18rpx 0 28rpx;
+}
+
+.menu-header view {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.title {
+  font-size: 50rpx;
+  font-weight: 700;
+}
+
+.add-button {
+  width: 78rpx;
+  height: 78rpx;
+  line-height: 70rpx;
+  padding: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #e57442;
+  font-size: 48rpx;
+  font-weight: 300;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 0 22rpx;
+  height: 76rpx;
+  box-sizing: border-box;
+}
+
+.search-icon {
+  color: #a89b92;
+  font-size: 36rpx;
+}
+
+.search-box input {
+  flex: 1;
+  font-size: 26rpx;
+}
+
+.category-scroll {
+  white-space: nowrap;
+  margin: 24rpx 0;
+}
+
+.category {
+  display: inline-block;
+  padding: 14rpx 24rpx;
+  margin-right: 12rpx;
+  border-radius: 99rpx;
+  color: #8b8178;
+  background: #eee9e4;
+  font-size: 24rpx;
+}
+
+.category.selected {
+  color: #fff;
+  background: #e57442;
+}
+
+.dish-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.dish-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 22rpx;
+  box-shadow: 0 10rpx 26rpx rgba(86, 61, 44, .04);
+}
+
+.dish-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dish-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dish-name {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.favorite {
+  color: #c2b6ad;
+  font-size: 38rpx;
+  padding: 0 8rpx;
+}
+
+.favorite.liked {
+  color: #e57442;
+}
+
+.category-label,
+.remark {
+  display: block;
+  margin-top: 8rpx;
+  color: #9a8d84;
+  font-size: 22rpx;
+}
+
+.remark {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-button {
+  flex: none;
+  padding: 0 22rpx;
+  height: 62rpx;
+  line-height: 62rpx;
+  border-radius: 14rpx;
+  color: #e57442;
+  background: #fff1e9;
+  font-size: 24rpx;
+}

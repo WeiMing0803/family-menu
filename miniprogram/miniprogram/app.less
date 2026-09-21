@@ -1,0 +1,88 @@
+page {
+  background: #f8f5f1;
+  color: #332b26;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+}
+
+button::after {
+  border: 0;
+}
+
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: 36rpx;
+}
+
+.page-content {
+  padding: 30rpx 32rpx;
+}
+
+.muted {
+  color: #968b83;
+}
+
+.error-text {
+  color: #bd4b38;
+  background: #fff0eb;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 12rpx 36rpx rgba(86, 61, 44, .06);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  line-height: 88rpx;
+  height: 88rpx;
+}
+
+.primary-button {
+  background: #e57442;
+  color: #fff;
+}
+
+.secondary-button {
+  color: #e57442;
+  background: #fff;
+  border: 1rpx solid #f1c4ad;
+}
+
+.danger-button {
+  color: #bd4b38;
+  background: #fff0eb;
+}
+
+.bottom-nav {
+  display: flex;
+  gap: 18rpx;
+  padding: 24rpx 32rpx 0;
+}
+
+.bottom-nav button {
+  flex: 1;
+  padding: 0;
+  color: #8b8178;
+  background: transparent;
+  font-size: 24rpx;
+}
+
+.bottom-nav button.active {
+  color: #e57442;
+  font-weight: 600;
+}

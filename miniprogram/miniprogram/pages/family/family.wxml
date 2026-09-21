@@ -1,0 +1,45 @@
+<navigation-bar title="家庭管理" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
+<view class="page page-content">
+  <view class="family-heading">
+    <text class="title">我们的小家</text>
+    <text class="muted">邀请家人，一起决定今天吃什么。</text>
+  </view>
+  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:elif="{{loading}}" class="empty-card"><text>正在读取家庭信息…</text></view>
+  <block wx:elif="{{!family}}">
+    <view class="form-card">
+      <text class="card-title">创建家庭</text>
+      <input value="{{familyName}}" placeholder="家庭名称（默认：我们的家）" maxlength="100" bindinput="onFamilyNameInput" />
+      <button class="primary-button" loading="{{busy}}" disabled="{{busy}}" bindtap="create">创建家庭</button>
+    </view>
+    <view class="form-card join-card">
+      <text class="card-title">加入家庭</text>
+      <input value="{{inviteCode}}" placeholder="输入 6 位邀请码" maxlength="6" bindinput="onInviteCodeInput" />
+      <button class="secondary-button" loading="{{busy}}" disabled="{{busy}}" bindtap="join">加入家庭</button>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="invite-card">
+      <text class="muted">家庭邀请码</text>
+      <view class="invite-row">
+        <text class="invite-code">{{family.inviteCode}}</text>
+        <button bindtap="copyInviteCode">复制</button>
+      </view>
+      <text class="muted">把邀请码发给家人即可加入（最多 2 人）</text>
+    </view>
+    <view class="members-card">
+      <view class="card-header"><text class="card-title">家庭成员</text><text class="muted">{{family.memberCount}} 人</text></view>
+      <view wx:for="{{members}}" wx:key="id" class="member-row">
+        <view class="avatar-placeholder">{{item.initial}}</view>
+        <view><text class="member-name">{{item.nickName}}</text><text class="muted member-date">已加入</text></view>
+      </view>
+    </view>
+    <button class="danger-button" bindtap="signOut">退出登录</button>
+  </block>
+  <view class="bottom-nav">
+    <button bindtap="goToday">今日</button>
+    <button bindtap="goMenu">菜单</button>
+    <button bindtap="goHistory">历史</button>
+    <button class="active">家庭</button>
+  </view>
+</view>

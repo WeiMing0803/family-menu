@@ -1,0 +1,58 @@
+<navigation-bar title="今日想吃" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
+<view class="page page-content">
+  <view class="home-heading">
+    <text class="eyebrow">FAMILY MENU</text>
+    <text class="title">今天吃什么？</text>
+    <text class="muted">一起选，按时吃饭。</text>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="error-text">
+    <text>{{errorMessage}}</text>
+    <button class="secondary-button small-button" bindtap="goLogin">重新登录</button>
+  </view>
+  <view wx:elif="{{loading}}" class="empty-card">
+    <text>正在准备今天的菜单…</text>
+  </view>
+  <view wx:elif="{{!family}}" class="welcome-card">
+    <text class="card-title">先建立一个家庭</text>
+    <text class="muted">创建家庭或输入邀请码，和家人共享菜单。</text>
+    <button class="primary-button" bindtap="goFamily">去家庭管理</button>
+  </view>
+  <block wx:else>
+    <view class="family-banner">
+      <view>
+        <text class="family-name">{{family.name}}</text>
+        <text class="muted">{{todayLabel}}</text>
+      </view>
+      <text class="member-count">{{family.memberCount}} 位成员</text>
+    </view>
+
+    <view class="order-card">
+      <view class="card-header">
+        <text class="card-title">今日点餐</text>
+        <text class="muted">{{order.items.length}} 道菜</text>
+      </view>
+      <view wx:if="{{!order.items.length}}" class="empty-card compact">
+        <text class="muted">还没有想吃的，去菜单挑一道吧。</text>
+        <button class="primary-button small-button" bindtap="goMenu">打开菜单</button>
+      </view>
+      <block wx:else>
+        <view wx:for="{{order.items}}" wx:key="id" class="order-item">
+          <view class="dish-dot"></view>
+          <view class="item-main">
+            <text class="item-name">{{item.dishName}}</text>
+            <text class="muted">{{item.category}}<block wx:if="{{item.remark}}"> · {{item.remark}}</block></text>
+          </view>
+          <text class="quantity">×{{item.quantity}}</text>
+        </view>
+        <button class="secondary-button small-button" bindtap="clearOrder">清空今日点餐</button>
+      </block>
+    </view>
+  </block>
+
+  <view class="bottom-nav">
+    <button class="active" bindtap="goMenu">菜单</button>
+    <button bindtap="goHistory">历史</button>
+    <button bindtap="goFamily">家庭</button>
+  </view>
+</view>

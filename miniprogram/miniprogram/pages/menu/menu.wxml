@@ -1,0 +1,47 @@
+<navigation-bar title="共享菜单" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
+<view class="page page-content">
+  <view class="menu-header">
+    <view>
+      <text class="title">吃点好的</text>
+      <text class="muted">{{family ? family.name : '还未加入家庭'}}</text>
+    </view>
+    <button class="add-button" bindtap="openCreate">＋</button>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:elif="{{!family}}" class="empty-card">
+    <text class="card-title">加入家庭后开始共享菜单</text>
+    <button class="primary-button" bindtap="goFamily">去家庭管理</button>
+  </view>
+  <block wx:else>
+    <view class="search-box">
+      <text class="search-icon">⌕</text>
+      <input value="{{search}}" placeholder="搜索菜名" confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearchConfirm" />
+    </view>
+    <scroll-view class="category-scroll" scroll-x>
+      <view wx:for="{{categories}}" wx:key="*this" class="category {{currentCategory === item ? 'selected' : ''}}" data-category="{{item}}" bindtap="selectCategory">{{item}}</view>
+    </scroll-view>
+    <view wx:if="{{loading}}" class="empty-card"><text>正在加载菜单…</text></view>
+    <view wx:elif="{{!dishes.length}}" class="empty-card"><text class="muted">还没有符合条件的菜品，先添加一道吧。</text></view>
+    <view wx:else class="dish-list">
+      <view wx:for="{{dishes}}" wx:key="id" class="dish-card" bindtap="openEdit" data-id="{{item.id}}">
+        <view class="dish-info">
+          <view class="dish-title-row">
+            <text class="dish-name">{{item.name}}</text>
+            <text class="favorite {{item.isFavorite ? 'liked' : ''}}" catchtap="toggleFavorite" data-id="{{item.id}}">{{item.isFavorite ? '♥' : '♡'}}</text>
+          </view>
+          <text class="category-label">{{item.category}}</text>
+          <text wx:if="{{item.remark}}" class="remark">{{item.remark}}</text>
+        </view>
+        <button class="quick-button" catchtap="quickOrder" data-id="{{item.id}}">想吃</button>
+      </view>
+    </view>
+  </block>
+
+  <view class="bottom-nav">
+    <button bindtap="goToday">今日</button>
+    <button class="active">菜单</button>
+    <button bindtap="goHistory">历史</button>
+    <button bindtap="goFamily">家庭</button>
+  </view>
+</view>

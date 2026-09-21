@@ -1,0 +1,19 @@
+<navigation-bar title="{{isEdit ? '编辑菜品' : '添加菜品'}}" back="{{true}}" color="#332b26" background="#f8f5f1"></navigation-bar>
+<view class="page page-content">
+  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view class="form-card">
+    <view class="field">
+      <text class="label">菜名</text>
+      <input value="{{name}}" placeholder="例如：番茄炒蛋" maxlength="100" bindinput="onNameInput" />
+    </view>
+    <view class="field">
+      <text class="label">分类</text>
+      <input value="{{category}}" placeholder="早餐 / 午餐 / 晚餐 / 其他" maxlength="30" bindinput="onCategoryInput" />
+    </view>
+    <view class="field last-field">
+      <text class="label">备注</text>
+      <textarea value="{{remark}}" placeholder="口味、食材或烹饪提示（可选）" maxlength="500" bindinput="onRemarkInput" />
+    </view>
+  </view>
+  <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">保存菜品</button>
+</view>

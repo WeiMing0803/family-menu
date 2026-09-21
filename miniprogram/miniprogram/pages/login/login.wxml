@@ -1,0 +1,10 @@
+<view class="login-page">
+  <view class="login-brand">
+    <text class="brand-mark">⌂</text>
+    <text class="brand-name">Family Menu</text>
+    <text class="muted">把每一顿饭，变成共同的小事。</text>
+  </view>
+  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <button class="primary-button" loading="{{loading}}" disabled="{{loading}}" bindtap="startLogin">微信登录</button>
+  <text class="login-hint">开发联调模式会使用本地登录身份；上线前请在 services/config.ts 切换为 wechat。</text>
+</view>

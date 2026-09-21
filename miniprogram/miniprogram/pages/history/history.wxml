@@ -1,0 +1,28 @@
+<navigation-bar title="点餐历史" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
+<view class="page page-content">
+  <view class="history-heading">
+    <text class="title">一起吃过的饭</text>
+    <text class="muted">最近 100 条记录</text>
+  </view>
+  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:elif="{{loading}}" class="empty-card"><text>正在读取历史记录…</text></view>
+  <view wx:elif="{{!orders.length}}" class="empty-card"><text class="muted">还没有历史点餐记录。</text></view>
+  <view wx:else class="history-list">
+    <view wx:for="{{orders}}" wx:key="id" class="history-card">
+      <view class="history-header">
+        <text class="date">{{item.displayDate}}</text>
+        <text class="status">{{item.status}}</text>
+      </view>
+      <view wx:for="{{item.items}}" wx:key="id" class="history-item">
+        <text>{{item.dishName}}</text>
+        <text class="muted">×{{item.quantity}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="bottom-nav">
+    <button bindtap="goToday">今日</button>
+    <button bindtap="goMenu">菜单</button>
+    <button class="active">历史</button>
+    <button bindtap="goFamily">家庭</button>
+  </view>
+</view>

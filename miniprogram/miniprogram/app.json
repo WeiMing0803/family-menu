@@ -1,0 +1,38 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/menu/menu",
+    "pages/dish-edit/dish-edit",
+    "pages/history/history",
+    "pages/family/family",
+    "pages/login/login"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom"
+  },
+  "style": "v2",
+  "tabBar": {
+    "color": "#8b8178",
+    "selectedColor": "#e57442",
+    "backgroundColor": "#fffaf5",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "今日" },
+      { "pagePath": "pages/menu/menu", "text": "菜单" },
+      { "pagePath": "pages/history/history", "text": "历史" },
+      { "pagePath": "pages/family/family", "text": "家庭" }
+    ]
+  },
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

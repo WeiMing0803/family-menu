@@ -1,0 +1,16 @@
+{
+  "name": "family-menu-miniprogram",
+  "version": "1.0.0",
+  "description": "家庭点餐微信小程序",
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@vant/weapp": "^1.11.7"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^2.8.3-1"
+  }
+}
