@@ -1,6 +1,7 @@
 import { ApiError, createFamily, getFamilyOrNull, getMembers, joinFamily } from '../../services/api'
 import { login, logout } from '../../services/auth'
 import type { FamilyResponse, MemberResponse } from '../../services/models'
+import { startRealtime, stopRealtime } from '../../services/realtime'
 
 const app = getApp<IAppOption>()
 
@@ -26,6 +27,8 @@ Page({
       app.globalData.user = auth.user
       const family = await getFamilyOrNull()
       app.globalData.family = family
+      if (family) startRealtime()
+      else void stopRealtime()
       const members = family
         ? (await getMembers()).map((member) => ({ ...member, initial: member.nickName.slice(0, 1) }))
         : []

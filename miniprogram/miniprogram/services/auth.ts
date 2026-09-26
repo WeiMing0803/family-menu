@@ -1,6 +1,7 @@
 import { DEVELOPMENT_NICKNAME, DEVELOPMENT_OPEN_ID, LOGIN_MODE, STORAGE_KEYS } from './config'
 import { request } from './api'
 import type { AuthResponse } from './models'
+import { stopRealtime } from './realtime'
 
 function getLoginCode(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,6 +44,7 @@ export async function login(force = false): Promise<AuthResponse> {
 }
 
 export function logout(): void {
+  void stopRealtime()
   wx.removeStorageSync(STORAGE_KEYS.token)
   wx.removeStorageSync(STORAGE_KEYS.user)
 }

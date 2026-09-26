@@ -1,5 +1,6 @@
 import { login } from './services/auth'
 import { getFamilyOrNull } from './services/api'
+import { startRealtime, stopRealtime } from './services/realtime'
 
 App<IAppOption>({
   globalData: {},
@@ -13,9 +14,18 @@ App<IAppOption>({
       .then(async (auth) => {
         this.globalData.user = auth.user
         this.globalData.family = await getFamilyOrNull()
+        if (this.globalData.family) startRealtime()
       })
       .catch(() => {
         // 首页/登录页负责展示可操作的错误状态，这里不阻断小程序启动。
       })
+  },
+
+  onShow() {
+    if (this.globalData.family) startRealtime()
+  },
+
+  onHide() {
+    void stopRealtime()
   }
 })

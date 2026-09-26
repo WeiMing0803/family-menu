@@ -2,12 +2,12 @@
   "name": "family-menu-miniprogram",
   "version": "1.0.0",
   "description": "家庭点餐微信小程序",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "",
   "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
     "@vant/weapp": "^1.11.7"
   },
   "devDependencies": {

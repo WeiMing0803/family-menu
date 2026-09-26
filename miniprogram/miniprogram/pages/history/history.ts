@@ -2,6 +2,9 @@ import { ApiError, getOrderHistory } from '../../services/api'
 import { login } from '../../services/auth'
 import type { OrderResponse } from '../../services/models'
 import { shortDate } from '../../utils/date'
+import { subscribeRealtime } from '../../services/realtime'
+
+let unsubscribeOrderChanges: (() => void) | null = null
 
 Page({
   data: {
@@ -11,7 +14,14 @@ Page({
   },
 
   onShow() {
+    unsubscribeOrderChanges?.()
+    unsubscribeOrderChanges = subscribeRealtime('OrderChanged', () => void this.load())
     void this.load()
+  },
+
+  onHide() {
+    unsubscribeOrderChanges?.()
+    unsubscribeOrderChanges = null
   },
 
   async load(): Promise<void> {

@@ -1,4 +1,5 @@
 import { API_BASE_URL, STORAGE_KEYS } from './config'
+import { stopRealtime } from './realtime'
 import type {
   DishResponse,
   FamilyResponse,
@@ -78,6 +79,7 @@ export function request<T>(path: string, options: RequestOptions = {}): Promise<
         if (response.statusCode === 401) {
           wx.removeStorageSync(STORAGE_KEYS.token)
           wx.removeStorageSync(STORAGE_KEYS.user)
+          void stopRealtime()
         }
         reject(new ApiError(getErrorMessage(response.data, response.statusCode), response.statusCode))
       },

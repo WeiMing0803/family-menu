@@ -1,8 +1,10 @@
 import { addOrderItem, ApiError, getFamilyOrNull, listDishes, toggleFavorite } from '../../services/api'
 import { login } from '../../services/auth'
 import type { DishResponse, FamilyResponse } from '../../services/models'
+import { startRealtime, stopRealtime, subscribeRealtime } from '../../services/realtime'
 
 const app = getApp<IAppOption>()
+let unsubscribeDishChanges: (() => void) | null = null
 
 Page({
   data: {
@@ -16,7 +18,14 @@ Page({
   },
 
   onShow() {
+    unsubscribeDishChanges?.()
+    unsubscribeDishChanges = subscribeRealtime('DishChanged', () => void this.load())
     void this.load()
+  },
+
+  onHide() {
+    unsubscribeDishChanges?.()
+    unsubscribeDishChanges = null
   },
 
   async load(): Promise<void> {
@@ -27,9 +36,11 @@ Page({
       const family = await getFamilyOrNull()
       app.globalData.family = family
       if (!family) {
+        void stopRealtime()
         this.setData({ loading: false, family: null, dishes: [] })
         return
       }
+      startRealtime()
       const dishes = await listDishes({
         category: this.data.currentCategory === '全部' ? undefined : this.data.currentCategory,
         search: this.data.search.trim() || undefined

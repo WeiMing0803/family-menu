@@ -2,8 +2,11 @@ import { login } from '../../services/auth'
 import { ApiError, clearTodayOrder, getFamilyOrNull, getTodayOrder } from '../../services/api'
 import type { FamilyResponse, OrderResponse } from '../../services/models'
 import { shortDate } from '../../utils/date'
+import { startRealtime, stopRealtime, subscribeRealtime } from '../../services/realtime'
 
 const app = getApp<IAppOption>()
+let unsubscribeOrderChanges: (() => void) | null = null
+let unsubscribeDishChanges: (() => void) | null = null
 
 Page({
   data: {
@@ -15,7 +18,18 @@ Page({
   },
 
   onShow() {
+    unsubscribeOrderChanges?.()
+    unsubscribeDishChanges?.()
+    unsubscribeOrderChanges = subscribeRealtime('OrderChanged', () => void this.load())
+    unsubscribeDishChanges = subscribeRealtime('DishChanged', () => void this.load())
     void this.load()
+  },
+
+  onHide() {
+    unsubscribeOrderChanges?.()
+    unsubscribeDishChanges?.()
+    unsubscribeOrderChanges = null
+    unsubscribeDishChanges = null
   },
 
   async load(): Promise<void> {
@@ -26,9 +40,11 @@ Page({
       const family = await getFamilyOrNull()
       app.globalData.family = family
       if (!family) {
+        void stopRealtime()
         this.setData({ loading: false, family: null, order: null })
         return
       }
+      startRealtime()
       const order = await getTodayOrder()
       this.setData({
         loading: false,
