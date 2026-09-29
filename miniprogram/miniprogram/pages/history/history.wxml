@@ -19,10 +19,4 @@
       </view>
     </view>
   </view>
-  <view class="bottom-nav">
-    <button bindtap="goToday">今日</button>
-    <button bindtap="goMenu">菜单</button>
-    <button class="active">历史</button>
-    <button bindtap="goFamily">家庭</button>
-  </view>
 </view>

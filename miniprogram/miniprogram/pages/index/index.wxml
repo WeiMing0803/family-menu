@@ -8,7 +8,7 @@
 
   <view wx:if="{{errorMessage}}" class="error-text">
     <text>{{errorMessage}}</text>
-    <button class="secondary-button small-button" bindtap="goLogin">重新登录</button>
+    <button class="secondary-button small-button" bindtap="load">重试加载</button>
   </view>
   <view wx:elif="{{loading}}" class="empty-card">
     <text>正在准备今天的菜单…</text>
@@ -49,10 +49,4 @@
       </block>
     </view>
   </block>
-
-  <view class="bottom-nav">
-    <button class="active" bindtap="goMenu">菜单</button>
-    <button bindtap="goHistory">历史</button>
-    <button bindtap="goFamily">家庭</button>
-  </view>
 </view>

@@ -41,16 +41,4 @@ Page({
       this.setData({ loading: false, errorMessage: error instanceof ApiError ? error.message : '暂时无法加载历史记录' })
     }
   },
-
-  goToday(): void {
-    wx.switchTab({ url: '/pages/index/index' })
-  },
-
-  goMenu(): void {
-    wx.switchTab({ url: '/pages/menu/menu' })
-  },
-
-  goFamily(): void {
-    wx.switchTab({ url: '/pages/family/family' })
-  }
 })

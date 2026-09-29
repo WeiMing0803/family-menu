@@ -44,7 +44,13 @@ Page({
         this.setData({ loading: false, family: null, order: null })
         return
       }
-      startRealtime()
+      // Realtime updates are optional; a socket setup failure must not block
+      // the initial HTTP requests that populate the home page.
+      try {
+        startRealtime()
+      } catch (error) {
+        console.error('[今日页] 实时连接启动失败', error)
+      }
       const order = await getTodayOrder()
       this.setData({
         loading: false,
@@ -53,11 +59,18 @@ Page({
         todayLabel: shortDate(order.orderDate)
       })
     } catch (error) {
+      console.error('[今日页] 加载失败', error)
       if (error instanceof ApiError && error.statusCode === 401) {
         wx.reLaunch({ url: '/pages/login/login' })
         return
       }
-      const message = error instanceof ApiError ? error.message : '暂时无法加载今日点餐'
+      const message = error instanceof ApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'errMsg' in error
+            ? String((error as { errMsg?: unknown }).errMsg || '暂时无法加载今日点餐')
+            : '暂时无法加载今日点餐'
       this.setData({ loading: false, errorMessage: message })
     }
   },
@@ -66,16 +79,8 @@ Page({
     wx.switchTab({ url: '/pages/family/family' })
   },
 
-  goLogin(): void {
-    wx.reLaunch({ url: '/pages/login/login' })
-  },
-
   goMenu(): void {
     wx.switchTab({ url: '/pages/menu/menu' })
-  },
-
-  goHistory(): void {
-    wx.switchTab({ url: '/pages/history/history' })
   },
 
   async clearOrder(): Promise<void> {

@@ -99,14 +99,6 @@ Page({
     wx.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${dishId}` })
   },
 
-  goToday(): void {
-    wx.switchTab({ url: '/pages/index/index' })
-  },
-
-  goHistory(): void {
-    wx.switchTab({ url: '/pages/history/history' })
-  },
-
   goFamily(): void {
     wx.switchTab({ url: '/pages/family/family' })
   }

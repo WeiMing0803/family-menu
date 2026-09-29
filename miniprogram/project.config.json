@@ -15,7 +15,7 @@
     "coverView": false,
     "postcss": false,
     "minified": false,
-    "enhance": false,
+    "enhance": true,
     "showShadowRootInWxmlPanel": false,
     "packNpmRelationList": [
       {
@@ -26,7 +26,7 @@
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
     "skylineRenderEnable": true,
-    "es6": false,
+    "es6": true,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
     "packNpmManually": true,
@@ -42,6 +42,11 @@
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
+  "scripts": {
+    "beforeCompile": "node scripts/prepare-signalr-miniprogram.js",
+    "beforePreview": "node scripts/prepare-signalr-miniprogram.js",
+    "beforeUpload": "node scripts/prepare-signalr-miniprogram.js"
+  },
   "condition": {},
   "srcMiniprogramRoot": "miniprogram/",
   "editorSetting": {

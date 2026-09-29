@@ -1,4 +1,7 @@
 import {
+  HttpClient,
+  HttpRequest,
+  HttpResponse,
   HubConnection,
   HubConnectionBuilder,
   HubConnectionState,
@@ -38,6 +41,12 @@ interface MiniProgramWebSocketConstructor {
   readonly CLOSING: number
   readonly CONNECTING: number
   readonly OPEN: number
+}
+
+class MiniProgramHttpClient extends HttpClient {
+  send(_request: HttpRequest): Promise<HttpResponse> {
+    return Promise.reject(new Error('SignalR HTTP requests are unavailable in this WebSocket-only connection.'))
+  }
 }
 
 class MiniProgramWebSocket implements MiniProgramWebSocketLike {
@@ -124,8 +133,7 @@ function getToken(): string {
 
 function getHubUrl(): string {
   const apiRoot = API_BASE_URL.replace(/\/api\/?$/i, '')
-  const websocketRoot = apiRoot.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:')
-  return `${websocketRoot}/hubs/family`
+  return `${apiRoot}/hubs/family`
 }
 
 function notify(event: RealtimeEvent): void {
@@ -144,6 +152,7 @@ function createConnection(): HubConnection {
     transport: HttpTransportType.WebSockets,
     skipNegotiation: true,
     withCredentials: false,
+    httpClient: new MiniProgramHttpClient(),
     WebSocket: MiniProgramWebSocket as unknown as MiniProgramWebSocketConstructor
   }
   const hub = new HubConnectionBuilder()

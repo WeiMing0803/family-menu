@@ -92,16 +92,4 @@ Page({
     logout()
     wx.reLaunch({ url: '/pages/login/login' })
   },
-
-  goToday(): void {
-    wx.switchTab({ url: '/pages/index/index' })
-  },
-
-  goMenu(): void {
-    wx.switchTab({ url: '/pages/menu/menu' })
-  },
-
-  goHistory(): void {
-    wx.switchTab({ url: '/pages/history/history' })
-  }
 })
