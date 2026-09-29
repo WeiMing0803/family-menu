@@ -6,6 +6,8 @@ Page({
     isEdit: false,
     name: '',
     category: '晚餐',
+    categoryOptions: ['早餐', '午餐', '晚餐', '其他'],
+    categoryIndex: 2,
     remark: '',
     isFavorite: false,
     saving: false,
@@ -24,9 +26,12 @@ Page({
       const dishes = await listDishes()
       const dish = dishes.find((item) => item.id === dishId)
       if (!dish) throw new Error('菜品不存在')
+      const categoryOptions = this.data.categoryOptions as string[]
+      const category = categoryOptions.includes(dish.category) ? dish.category : '其他'
       this.setData({
         name: dish.name,
-        category: dish.category,
+        category,
+        categoryIndex: categoryOptions.indexOf(category),
         remark: dish.remark || '',
         isFavorite: dish.isFavorite
       })
@@ -39,12 +44,18 @@ Page({
     this.setData({ name: event.detail.value })
   },
 
-  onCategoryInput(event: WechatMiniprogram.Input): void {
-    this.setData({ category: event.detail.value })
+  onCategoryChange(event: WechatMiniprogram.PickerChange): void {
+    const categoryIndex = Number(event.detail.value)
+    const categoryOptions = this.data.categoryOptions as string[]
+    this.setData({ categoryIndex, category: categoryOptions[categoryIndex] || '其他' })
   },
 
   onRemarkInput(event: WechatMiniprogram.Input): void {
     this.setData({ remark: event.detail.value })
+  },
+
+  cancel(): void {
+    wx.navigateBack()
   },
 
   async save(): Promise<void> {
@@ -57,7 +68,7 @@ Page({
     try {
       const payload = {
         name,
-        category: this.data.category.trim() || '其他',
+        category: this.data.category,
         remark: this.data.remark.trim() || undefined,
         isFavorite: this.data.isFavorite
       }

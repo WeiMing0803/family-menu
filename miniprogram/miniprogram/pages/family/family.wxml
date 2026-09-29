@@ -4,7 +4,10 @@
     <text class="title">我们的小家</text>
     <text class="muted">邀请家人，一起决定今天吃什么。</text>
   </view>
-  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:if="{{errorMessage}}" class="error-text">
+    <text>{{errorMessage}}</text>
+    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+  </view>
   <view wx:elif="{{loading}}" class="empty-card"><text>正在读取家庭信息…</text></view>
   <block wx:elif="{{!family}}">
     <view class="form-card">

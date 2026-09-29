@@ -79,13 +79,22 @@
 }
 
 .compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
   padding: 20rpx 0 0;
   box-shadow: none;
+  text-align: center;
 }
 
 .order-item {
   padding: 24rpx 0;
   border-bottom: 1rpx solid #f1ece7;
+}
+
+.order-item.last-order-item {
+  border-bottom: 0;
 }
 
 .dish-dot {
@@ -113,7 +122,29 @@
 }
 
 .small-button {
-  height: 72rpx;
-  line-height: 72rpx;
   margin-top: 22rpx;
+}
+
+.compact .small-button {
+  align-self: center;
+}
+
+.order-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clear-order-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: auto;
+  height: 64rpx;
+  line-height: normal;
+  margin: 10rpx 0 0;
+  padding: 0 8rpx;
+  color: #a36e4f;
+  background: transparent;
+  font-size: 24rpx;
 }

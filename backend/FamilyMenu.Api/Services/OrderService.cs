@@ -51,12 +51,17 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
             return ServiceResult<OrderResponse>.Fail(StatusCodes.Status404NotFound, "菜品不存在或不属于当前家庭");
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var today = UtcToday();
         var order = await FindOrderAsync(familyId.Value, today, cancellationToken);
         if (order is null)
         {
             order = new Order { FamilyId = familyId.Value, OrderDate = today, Status = OrderStatuses.Active };
             db.Orders.Add(order);
+        }
+        else if (order.Items.Any(x => x.DishId == dish.Id))
+        {
+            return ServiceResult<OrderResponse>.Fail(StatusCodes.Status409Conflict, "这道菜已在今日点餐中");
         }
 
         var item = new OrderItem
@@ -69,6 +74,7 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
         };
         order.Items.Add(item);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         await NotifyAsync(familyId.Value, "itemAdded", item.Id, cancellationToken);
         return ServiceResult<OrderResponse>.Created(OrderResponse.FromEntity(order));
     }

@@ -4,14 +4,20 @@
     <text class="title">一起吃过的饭</text>
     <text class="muted">最近 100 条记录</text>
   </view>
-  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:if="{{errorMessage}}" class="error-text">
+    <text>{{errorMessage}}</text>
+    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+  </view>
   <view wx:elif="{{loading}}" class="empty-card"><text>正在读取历史记录…</text></view>
   <view wx:elif="{{!orders.length}}" class="empty-card"><text class="muted">还没有历史点餐记录。</text></view>
   <view wx:else class="history-list">
     <view wx:for="{{orders}}" wx:key="id" class="history-card">
       <view class="history-header">
-        <text class="date">{{item.displayDate}}</text>
-        <text class="status">{{item.status}}</text>
+        <view class="date-group">
+          <text class="date">{{item.displayDate}}</text>
+          <text wx:if="{{item.displayTime}}" class="time">{{item.displayTime}}</text>
+        </view>
+        <text class="status">{{item.displayStatus}}</text>
       </view>
       <view wx:for="{{item.items}}" wx:key="id" class="history-item">
         <text>{{item.dishName}}</text>

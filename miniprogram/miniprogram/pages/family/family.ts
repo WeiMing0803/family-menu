@@ -76,7 +76,10 @@ Page({
 
   copyInviteCode(): void {
     if (!this.data.family) return
-    wx.setClipboardData({ data: this.data.family.inviteCode })
+    wx.setClipboardData({
+      data: this.data.family.inviteCode,
+      success: () => wx.showToast({ title: '邀请码已复制', icon: 'success' })
+    })
   },
 
   async signOut(): Promise<void> {

@@ -1,14 +1,17 @@
 <navigation-bar title="共享菜单" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
 <view class="page page-content">
   <view class="menu-header">
-    <view>
+    <view class="menu-title">
       <text class="title">吃点好的</text>
       <text class="muted">{{family ? family.name : '还未加入家庭'}}</text>
     </view>
-    <button class="add-button" bindtap="openCreate">＋</button>
+    <view class="add-button" bindtap="openCreate" aria-role="button" aria-label="添加菜品">＋</view>
   </view>
 
-  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
+  <view wx:if="{{errorMessage}}" class="error-text">
+    <text>{{errorMessage}}</text>
+    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+  </view>
   <view wx:elif="{{!family}}" class="empty-card">
     <text class="card-title">加入家庭后开始共享菜单</text>
     <button class="primary-button" bindtap="goFamily">去家庭管理</button>
@@ -17,6 +20,7 @@
     <view class="search-box">
       <text class="search-icon">⌕</text>
       <input value="{{search}}" placeholder="搜索菜名" confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearchConfirm" />
+      <text wx:if="{{search}}" class="clear-search" catchtap="clearSearch">×</text>
     </view>
     <scroll-view class="category-scroll" scroll-x>
       <view wx:for="{{categories}}" wx:key="*this" class="category {{currentCategory === item ? 'selected' : ''}}" data-category="{{item}}" bindtap="selectCategory">{{item}}</view>
@@ -28,13 +32,49 @@
         <view class="dish-info">
           <view class="dish-title-row">
             <text class="dish-name">{{item.name}}</text>
-            <text class="favorite {{item.isFavorite ? 'liked' : ''}}" catchtap="toggleFavorite" data-id="{{item.id}}">{{item.isFavorite ? '♥' : '♡'}}</text>
+            <view class="favorite {{item.isFavorite ? 'liked' : ''}}" catchtap="toggleFavorite" data-id="{{item.id}}" aria-role="button" aria-label="{{item.isFavorite ? '取消收藏' : '收藏'}}">{{item.isFavorite ? '♥' : '♡'}}</view>
           </view>
           <text class="category-label">{{item.category}}</text>
           <text wx:if="{{item.remark}}" class="remark">{{item.remark}}</text>
         </view>
-        <button class="quick-button" catchtap="quickOrder" data-id="{{item.id}}">想吃</button>
+        <button class="quick-button {{item.ordered ? 'ordered' : item.selected ? 'selected' : ''}}" disabled="{{item.ordered || submittingCart}}" catchtap="toggleCart" data-id="{{item.id}}">{{item.ordered ? '已点' : item.selected ? '已选' : '想吃'}}</button>
       </view>
     </view>
   </block>
+
+  <view wx:if="{{family}}" class="cart-fab" bindtap="openCart" aria-role="button" aria-label="查看已选菜品">
+    <view class="cart-icon" aria-hidden="true">
+      <view class="cart-handle"></view>
+      <view class="cart-basket"></view>
+      <view class="cart-wheel cart-wheel-left"></view>
+      <view class="cart-wheel cart-wheel-right"></view>
+    </view>
+    <text wx:if="{{cartItems.length}}" class="cart-badge">{{cartItems.length}}</text>
+  </view>
+
+  <view wx:if="{{showCart}}" class="cart-mask" bindtap="closeCart">
+    <view class="cart-sheet" catchtap="keepCartOpen">
+      <view class="cart-header">
+        <view>
+          <text class="cart-title">已选菜品</text>
+          <text class="cart-count">{{cartItems.length}} 道</text>
+        </view>
+        <text class="cart-close" bindtap="closeCart">取消</text>
+      </view>
+      <scroll-view wx:if="{{cartItems.length}}" class="cart-list" scroll-y>
+        <view wx:for="{{cartItems}}" wx:key="id" class="cart-item">
+          <view class="cart-item-info">
+            <text class="cart-item-name">{{item.name}}</text>
+            <text class="muted">{{item.category}}</text>
+          </view>
+          <text class="cart-remove" data-id="{{item.id}}" bindtap="removeCartItem">移除</text>
+        </view>
+      </scroll-view>
+      <view wx:else class="cart-empty">还没有选菜，点“想吃”加入购物车。</view>
+      <view class="cart-footer">
+        <button class="cart-clear" disabled="{{!cartItems.length || submittingCart}}" bindtap="clearCart">清空已选</button>
+        <button class="cart-submit" disabled="{{!cartItems.length || submittingCart}}" loading="{{submittingCart}}" bindtap="submitCart">{{submittingCart ? '正在加入…' : '加入今日点餐'}}</button>
+      </view>
+    </view>
+  </view>
 </view>

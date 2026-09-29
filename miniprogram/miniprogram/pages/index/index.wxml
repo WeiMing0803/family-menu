@@ -37,7 +37,7 @@
         <button class="primary-button small-button" bindtap="goMenu">打开菜单</button>
       </view>
       <block wx:else>
-        <view wx:for="{{order.items}}" wx:key="id" class="order-item">
+        <view wx:for="{{order.items}}" wx:for-index="itemIndex" wx:key="id" class="order-item {{itemIndex === order.items.length - 1 ? 'last-order-item' : ''}}">
           <view class="dish-dot"></view>
           <view class="item-main">
             <text class="item-name">{{item.dishName}}</text>
@@ -45,7 +45,9 @@
           </view>
           <text class="quantity">×{{item.quantity}}</text>
         </view>
-        <button class="secondary-button small-button" bindtap="clearOrder">清空今日点餐</button>
+        <view class="order-actions">
+          <button class="clear-order-button" bindtap="clearOrder">清空今日点餐</button>
+        </view>
       </block>
     </view>
   </block>

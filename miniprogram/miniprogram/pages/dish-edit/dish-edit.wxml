@@ -8,12 +8,21 @@
     </view>
     <view class="field">
       <text class="label">分类</text>
-      <input value="{{category}}" placeholder="早餐 / 午餐 / 晚餐 / 其他" maxlength="30" bindinput="onCategoryInput" />
+      <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+        <view class="picker-field">
+          <text>{{category}}</text>
+          <text class="picker-hint">选择分类</text>
+        </view>
+      </picker>
     </view>
     <view class="field last-field">
       <text class="label">备注</text>
       <textarea value="{{remark}}" placeholder="口味、食材或烹饪提示（可选）" maxlength="500" bindinput="onRemarkInput" />
+      <text class="character-count">{{remark.length}}/500</text>
     </view>
   </view>
-  <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">保存菜品</button>
+  <view class="form-actions">
+    <button class="secondary-button" disabled="{{saving}}" bindtap="cancel">取消</button>
+    <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">保存菜品</button>
+  </view>
 </view>
