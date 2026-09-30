@@ -31,12 +31,14 @@
       <text class="muted">把邀请码发给家人即可加入（最多 2 人）</text>
     </view>
     <view class="members-card">
-      <view class="card-header"><text class="card-title">家庭成员</text><text class="muted">{{family.memberCount}} 人</text></view>
+      <view class="card-header"><text class="card-title">家庭成员</text><text class="muted">{{members.length}} 人</text></view>
       <view wx:for="{{members}}" wx:key="id" class="member-row">
         <view class="avatar-placeholder">{{item.initial}}</view>
-        <view><text class="member-name">{{item.nickName}}</text><text class="muted member-date">已加入</text></view>
+        <view><text class="member-name">{{item.nickName}}<text wx:if="{{item.isMe}}" class="me-tag">我</text></text><text class="muted member-date">已加入</text></view>
       </view>
+      <text wx:if="{{members.length < 2}}" class="muted waiting-hint">等待家人用邀请码加入…</text>
     </view>
-    <button class="danger-button" bindtap="signOut">退出登录</button>
+    <button class="leave-button" disabled="{{busy}}" bindtap="leave">退出家庭</button>
   </block>
+  <button wx:if="{{!loading}}" class="danger-button" bindtap="signOut">{{signOutText}}</button>
 </view>

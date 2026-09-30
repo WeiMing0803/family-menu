@@ -22,6 +22,17 @@ public sealed class FamilyController(IFamilyService familyService) : FamilyMenuC
         return await ExecuteAsync(() => familyService.JoinAsync(UserId!.Value, request, cancellationToken));
     }
 
+    [HttpPost("leave")]
+    public async Task<IActionResult> Leave(CancellationToken cancellationToken)
+    {
+        if (!UserId.HasValue)
+        {
+            return UnauthorizedProblem();
+        }
+
+        return ToNoContentResult(await familyService.LeaveAsync(UserId.Value, cancellationToken));
+    }
+
     [HttpGet]
     public async Task<ActionResult<FamilyResponse>> Get(CancellationToken cancellationToken)
     {

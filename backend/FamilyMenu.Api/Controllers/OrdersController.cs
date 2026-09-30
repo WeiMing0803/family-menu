@@ -78,4 +78,17 @@ public sealed class OrdersController(IOrderService orderService) : FamilyMenuCon
 
         return ToActionResult(await orderService.HistoryAsync(UserId.Value, from, to, cancellationToken));
     }
+
+    [HttpGet("stats")]
+    public async Task<ActionResult<IReadOnlyList<DishStatResponse>>> Stats(
+        [FromQuery] int days = 7,
+        CancellationToken cancellationToken = default)
+    {
+        if (!UserId.HasValue)
+        {
+            return UnauthorizedProblem();
+        }
+
+        return ToActionResult(await orderService.TopDishesAsync(UserId.Value, days, cancellationToken));
+    }
 }

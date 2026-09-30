@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 using FamilyMenu.Api.Data;
+using FamilyMenu.Api.Hubs;
 using FamilyMenu.Api.Models.Dtos;
 using FamilyMenu.Api.Models.Entities;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace FamilyMenu.Api.Services;
@@ -12,12 +14,14 @@ public interface IFamilyService
 
     Task<ServiceResult<FamilyResponse>> JoinAsync(int userId, JoinFamilyRequest request, CancellationToken cancellationToken);
 
+    Task<ServiceResult<bool>> LeaveAsync(int userId, CancellationToken cancellationToken);
+
     Task<FamilyResponse?> GetCurrentFamilyAsync(int userId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<MemberResponse>> GetMembersAsync(int userId, CancellationToken cancellationToken);
 }
 
-public sealed class FamilyService(AppDbContext db) : IFamilyService
+public sealed class FamilyService(AppDbContext db, IHubContext<FamilyHub> hub) : IFamilyService
 {
     private const int MaxMembers = 2;
     private const string InviteAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -74,7 +78,29 @@ public sealed class FamilyService(AppDbContext db) : IFamilyService
 
         family.Members.Add(user);
         await db.SaveChangesAsync(cancellationToken);
+        await NotifyAsync(family.Id, "memberJoined", user.Id, cancellationToken);
         return ServiceResult<FamilyResponse>.Ok(FamilyResponse.FromEntity(family));
+    }
+
+    public async Task<ServiceResult<bool>> LeaveAsync(int userId, CancellationToken cancellationToken)
+    {
+        var user = await db.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return ServiceResult<bool>.Fail(StatusCodes.Status401Unauthorized, "用户不存在或登录已失效");
+        }
+
+        if (!user.FamilyId.HasValue)
+        {
+            return ServiceResult<bool>.Fail(StatusCodes.Status409Conflict, "当前用户尚未加入家庭");
+        }
+
+        // 家庭、菜品和点餐记录都保留，成员之后可以凭邀请码重新加入。
+        var familyId = user.FamilyId.Value;
+        user.FamilyId = null;
+        await db.SaveChangesAsync(cancellationToken);
+        await NotifyAsync(familyId, "memberLeft", user.Id, cancellationToken);
+        return ServiceResult<bool>.Ok(true);
     }
 
     public async Task<FamilyResponse?> GetCurrentFamilyAsync(int userId, CancellationToken cancellationToken)
@@ -111,6 +137,9 @@ public sealed class FamilyService(AppDbContext db) : IFamilyService
             .Select(x => new MemberResponse(x.Id, x.NickName, x.AvatarUrl, x.CreatedAt))
             .ToListAsync(cancellationToken);
     }
+
+    private Task NotifyAsync(int familyId, string action, int resourceId, CancellationToken cancellationToken) =>
+        hub.Clients.Group(FamilyHub.GroupName(familyId)).SendAsync("FamilyChanged", new { action, resourceId }, cancellationToken);
 
     private async Task<string> CreateInviteCodeAsync(CancellationToken cancellationToken)
     {

@@ -11,6 +11,20 @@
   <view wx:elif="{{loading}}" class="empty-card"><text>正在读取历史记录…</text></view>
   <view wx:elif="{{!orders.length}}" class="empty-card"><text class="muted">还没有历史点餐记录。</text></view>
   <view wx:else class="history-list">
+    <view wx:if="{{topDishes.length}}" class="stats-card">
+      <view class="stats-header">
+        <text class="stats-title">近 7 天常吃</text>
+        <text class="muted stats-subtitle">按点餐次数</text>
+      </view>
+      <view wx:for="{{topDishes}}" wx:key="dishId" class="stat-row">
+        <text class="stat-rank rank-{{item.rank}}">{{item.rank}}</text>
+        <view class="stat-main">
+          <text class="stat-name">{{item.dishName}}</text>
+          <view class="stat-bar"><view class="stat-bar-fill" style="width: {{item.barWidth}}%"></view></view>
+        </view>
+        <text class="stat-times">{{item.times}} 次</text>
+      </view>
+    </view>
     <view wx:for="{{orders}}" wx:key="id" class="history-card">
       <view class="history-header">
         <view class="date-group">
@@ -21,7 +35,7 @@
       </view>
       <view wx:for="{{item.items}}" wx:key="id" class="history-item">
         <text>{{item.dishName}}</text>
-        <text class="muted">×{{item.quantity}}</text>
+        <text wx:if="{{item.quantity > 1}}" class="muted">×{{item.quantity}}</text>
       </view>
     </view>
   </view>

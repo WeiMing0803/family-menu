@@ -11,7 +11,7 @@ import {
 } from '@microsoft/signalr'
 import { API_BASE_URL, STORAGE_KEYS } from './config'
 
-export type RealtimeEvent = 'DishChanged' | 'OrderChanged'
+export type RealtimeEvent = 'DishChanged' | 'OrderChanged' | 'FamilyChanged'
 type RealtimeListener = () => void
 
 interface MiniProgramSocketMessage {
@@ -118,7 +118,8 @@ class MiniProgramWebSocket implements MiniProgramWebSocketLike {
 
 const listeners: Record<RealtimeEvent, Set<RealtimeListener>> = {
   DishChanged: new Set<RealtimeListener>(),
-  OrderChanged: new Set<RealtimeListener>()
+  OrderChanged: new Set<RealtimeListener>(),
+  FamilyChanged: new Set<RealtimeListener>()
 }
 
 let connection: HubConnection | null = null
@@ -166,11 +167,13 @@ function createConnection(): HubConnection {
 
   hub.on('DishChanged', () => notify('DishChanged'))
   hub.on('OrderChanged', () => notify('OrderChanged'))
+  hub.on('FamilyChanged', () => notify('FamilyChanged'))
   hub.onreconnected(() => {
     initialRetryCount = 0
     // Refresh snapshots after reconnect so changes sent while offline are not missed.
     notify('DishChanged')
     notify('OrderChanged')
+    notify('FamilyChanged')
   })
   hub.onclose(() => scheduleInitialRetry())
   return hub

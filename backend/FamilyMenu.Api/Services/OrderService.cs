@@ -20,9 +20,11 @@ public interface IOrderService
     Task<ServiceResult<bool>> ClearTodayAsync(int userId, CancellationToken cancellationToken);
 
     Task<ServiceResult<IReadOnlyList<OrderResponse>>> HistoryAsync(int userId, DateTime? from, DateTime? to, CancellationToken cancellationToken);
+
+    Task<ServiceResult<IReadOnlyList<DishStatResponse>>> TopDishesAsync(int userId, int days, CancellationToken cancellationToken);
 }
 
-public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : IOrderService
+public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub, IFamilyClock clock) : IOrderService
 {
     public async Task<ServiceResult<OrderResponse>> GetTodayAsync(int userId, CancellationToken cancellationToken)
     {
@@ -32,7 +34,7 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
             return ServiceResult<OrderResponse>.Fail(StatusCodes.Status409Conflict, "请先加入家庭");
         }
 
-        var today = UtcToday();
+        var today = clock.Today;
         var order = await FindOrderAsync(familyId.Value, today, cancellationToken);
         return ServiceResult<OrderResponse>.Ok(order is null ? OrderResponse.Empty(today) : OrderResponse.FromEntity(order));
     }
@@ -52,7 +54,7 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var today = UtcToday();
+        var today = clock.Today;
         var order = await FindOrderAsync(familyId.Value, today, cancellationToken);
         if (order is null)
         {
@@ -131,7 +133,7 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
             return ServiceResult<bool>.Fail(StatusCodes.Status409Conflict, "请先加入家庭");
         }
 
-        var order = await FindOrderAsync(familyId.Value, UtcToday(), cancellationToken);
+        var order = await FindOrderAsync(familyId.Value, clock.Today, cancellationToken);
         if (order is null)
         {
             return ServiceResult<bool>.Ok(true);
@@ -180,6 +182,40 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
         return ServiceResult<IReadOnlyList<OrderResponse>>.Ok(orders.Select(OrderResponse.FromEntity).ToList());
     }
 
+    public async Task<ServiceResult<IReadOnlyList<DishStatResponse>>> TopDishesAsync(int userId, int days, CancellationToken cancellationToken)
+    {
+        var familyId = await GetFamilyIdAsync(userId, cancellationToken);
+        if (!familyId.HasValue)
+        {
+            return ServiceResult<IReadOnlyList<DishStatResponse>>.Fail(StatusCodes.Status409Conflict, "请先加入家庭");
+        }
+
+        if (days is < 1 or > 90)
+        {
+            return ServiceResult<IReadOnlyList<DishStatResponse>>.Fail(StatusCodes.Status400BadRequest, "统计天数需在 1 到 90 之间");
+        }
+
+        // 被清空的订单和标记为“不吃了”的菜不计入统计。
+        var from = clock.Today.AddDays(1 - days);
+        var items = await db.OrderItems
+            .AsNoTracking()
+            .Where(x => x.Order!.FamilyId == familyId.Value
+                && x.Order!.OrderDate >= from
+                && x.Order!.Status != OrderStatuses.Cancelled
+                && x.Status != OrderItemStatuses.Cancelled)
+            .Select(x => new { x.DishId, DishName = x.Dish!.Name, Category = x.Dish!.Category })
+            .ToListAsync(cancellationToken);
+
+        var stats = items
+            .GroupBy(x => x.DishId)
+            .Select(group => new DishStatResponse(group.Key, group.First().DishName, group.First().Category, group.Count()))
+            .OrderByDescending(x => x.Times)
+            .ThenBy(x => x.DishName)
+            .Take(5)
+            .ToList();
+        return ServiceResult<IReadOnlyList<DishStatResponse>>.Ok(stats);
+    }
+
     private async Task<Order?> FindOrderAsync(int familyId, DateTime date, CancellationToken cancellationToken) =>
         await db.Orders
             .Include(x => x.Items)
@@ -206,8 +242,6 @@ public sealed class OrderService(AppDbContext db, IHubContext<FamilyHub> hub) : 
 
     private Task NotifyAsync(int familyId, string action, int resourceId, CancellationToken cancellationToken) =>
         hub.Clients.Group(FamilyHub.GroupName(familyId)).SendAsync("OrderChanged", new { action, resourceId }, cancellationToken);
-
-    private static DateTime UtcToday() => DateTime.UtcNow.Date;
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

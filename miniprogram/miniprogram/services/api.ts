@@ -2,8 +2,10 @@ import { API_BASE_URL, STORAGE_KEYS } from './config'
 import { stopRealtime } from './realtime'
 import type {
   DishResponse,
+  DishStatResponse,
   FamilyResponse,
   MemberResponse,
+  OrderItemStatus,
   OrderResponse
 } from './models'
 
@@ -119,6 +121,10 @@ export function joinFamily(inviteCode: string): Promise<FamilyResponse> {
   })
 }
 
+export function leaveFamily(): Promise<void> {
+  return request<void>('/family/leave', { method: 'POST' })
+}
+
 export function listDishes(query: { category?: string; search?: string; favorite?: boolean } = {}): Promise<DishResponse[]> {
   return request<DishResponse[]>('/dishes', { query })
 }
@@ -129,6 +135,10 @@ export function createDish(data: { name: string; category?: string; remark?: str
 
 export function updateDish(id: number, data: { name: string; category?: string; remark?: string; isFavorite?: boolean }): Promise<DishResponse> {
   return request<DishResponse>(`/dishes/${id}`, { method: 'PUT', data })
+}
+
+export function deleteDish(id: number): Promise<void> {
+  return request<void>(`/dishes/${id}`, { method: 'DELETE' })
 }
 
 export function toggleFavorite(id: number): Promise<DishResponse> {
@@ -146,7 +156,7 @@ export function addOrderItem(dishId: number, quantity = 1): Promise<OrderRespons
   })
 }
 
-export function updateOrderItem(id: number, data: { quantity?: number; status?: string }): Promise<OrderResponse> {
+export function updateOrderItem(id: number, data: { quantity?: number; remark?: string; status?: OrderItemStatus }): Promise<OrderResponse> {
   return request<OrderResponse>(`/orders/items/${id}`, { method: 'PUT', data })
 }
 
@@ -160,4 +170,8 @@ export function clearTodayOrder(): Promise<void> {
 
 export function getOrderHistory(): Promise<OrderResponse[]> {
   return request<OrderResponse[]>('/orders/history')
+}
+
+export function getTopDishes(days = 7): Promise<DishStatResponse[]> {
+  return request<DishStatResponse[]>('/orders/stats', { query: { days } })
 }

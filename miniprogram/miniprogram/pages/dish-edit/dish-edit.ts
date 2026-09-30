@@ -1,4 +1,4 @@
-import { ApiError, createDish, listDishes, updateDish } from '../../services/api'
+import { ApiError, createDish, deleteDish, listDishes, updateDish } from '../../services/api'
 
 Page({
   data: {
@@ -11,6 +11,7 @@ Page({
     remark: '',
     isFavorite: false,
     saving: false,
+    deleting: false,
     errorMessage: ''
   },
 
@@ -56,6 +57,31 @@ Page({
 
   cancel(): void {
     wx.navigateBack()
+  },
+
+  async remove(): Promise<void> {
+    const dishId = this.data.dishId
+    if (!dishId || this.data.saving || this.data.deleting) return
+    const confirmed = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: '删除这道菜？',
+        content: `「${this.data.name}」将从菜单中移除。点过的菜会保留在历史记录里，因此无法删除。`,
+        confirmText: '删除',
+        confirmColor: '#bd4b38',
+        success: (result) => resolve(result.confirm),
+        fail: () => resolve(false)
+      })
+    })
+    if (!confirmed) return
+
+    this.setData({ deleting: true, errorMessage: '' })
+    try {
+      await deleteDish(dishId)
+      wx.showToast({ title: '已删除', icon: 'success' })
+      setTimeout(() => wx.navigateBack(), 500)
+    } catch (error) {
+      this.setData({ deleting: false, errorMessage: error instanceof ApiError ? error.message : '删除失败' })
+    }
   },
 
   async save(): Promise<void> {

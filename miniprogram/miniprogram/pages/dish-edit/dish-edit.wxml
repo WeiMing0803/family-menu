@@ -22,7 +22,8 @@
     </view>
   </view>
   <view class="form-actions">
-    <button class="secondary-button" disabled="{{saving}}" bindtap="cancel">取消</button>
-    <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">保存菜品</button>
+    <button class="secondary-button" disabled="{{saving || deleting}}" bindtap="cancel">取消</button>
+    <button class="primary-button" loading="{{saving}}" disabled="{{saving || deleting}}" bindtap="save">保存菜品</button>
   </view>
+  <button wx:if="{{isEdit}}" class="delete-dish-button" loading="{{deleting}}" disabled="{{saving || deleting}}" bindtap="remove">删除这道菜</button>
 </view>

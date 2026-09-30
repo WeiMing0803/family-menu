@@ -112,13 +112,62 @@
   gap: 6rpx;
 }
 
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .item-name {
   font-size: 30rpx;
 }
 
-.quantity {
-  color: #e57442;
-  font-size: 30rpx;
+.status-tag {
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: #5d8a4f;
+  background: #eaf4e4;
+}
+
+.status-Done .dish-dot {
+  background: #7fb069;
+}
+
+.status-Done .item-name {
+  color: #968b83;
+  text-decoration: line-through;
+}
+
+.status-Cancelled {
+  opacity: .55;
+}
+
+.status-Cancelled .dish-dot {
+  background: #c9bfb7;
+}
+
+.status-Cancelled .status-tag {
+  color: #968b83;
+  background: #f1ece7;
+}
+
+.more-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  margin-left: 8rpx;
+  color: #a0948b;
+  font-size: 32rpx;
+}
+
+.item-hint {
+  display: block;
+  margin-top: 12rpx;
+  color: #b5aaa2;
+  font-size: 22rpx;
 }
 
 .small-button {

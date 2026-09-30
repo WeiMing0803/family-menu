@@ -30,3 +30,13 @@ public sealed class CorsOptions
 
     public string[] AllowedOrigins { get; set; } = [];
 }
+
+public sealed class FamilyOptions
+{
+    public const string SectionName = "Family";
+
+    /// <summary>
+    /// 计算“今日点餐”所用的时区，IANA（Asia/Shanghai）或 Windows（China Standard Time）ID 均可。
+    /// </summary>
+    public string TimeZone { get; set; } = "Asia/Shanghai";
+}

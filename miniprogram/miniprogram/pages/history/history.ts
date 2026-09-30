@@ -1,6 +1,6 @@
-import { ApiError, getOrderHistory } from '../../services/api'
+import { ApiError, getOrderHistory, getTopDishes } from '../../services/api'
 import { login } from '../../services/auth'
-import type { OrderResponse } from '../../services/models'
+import type { DishStatResponse, OrderResponse } from '../../services/models'
 import { shortDate } from '../../utils/date'
 import { subscribeRealtime } from '../../services/realtime'
 
@@ -26,6 +26,7 @@ Page({
   data: {
     loading: true,
     orders: [] as Array<OrderResponse & { displayDate: string; displayTime: string; displayStatus: string }>,
+    topDishes: [] as Array<DishStatResponse & { rank: number; barWidth: number }>,
     errorMessage: ''
   },
 
@@ -44,7 +45,14 @@ Page({
     this.setData({ loading: true, errorMessage: '' })
     try {
       await login()
-      const orders = (await getOrderHistory()).map((order) => {
+      const [history, stats] = await Promise.all([getOrderHistory(), getTopDishes(7)])
+      const maxTimes = Math.max(1, ...stats.map((stat) => stat.times))
+      const topDishes = stats.map((stat, index) => ({
+        ...stat,
+        rank: index + 1,
+        barWidth: Math.round(stat.times / maxTimes * 100)
+      }))
+      const orders = history.map((order) => {
         return {
           ...order,
           displayDate: shortDate(order.orderDate),
@@ -52,7 +60,7 @@ Page({
           displayStatus: statusLabels[order.status] || order.status
         }
       })
-      this.setData({ loading: false, orders })
+      this.setData({ loading: false, orders, topDishes })
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
         wx.reLaunch({ url: '/pages/login/login' })

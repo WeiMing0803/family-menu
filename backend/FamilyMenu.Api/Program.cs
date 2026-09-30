@@ -55,6 +55,11 @@ builder.Services.AddOptions<CorsOptions>()
     .Validate(options => options.AllowedOrigins?.All(IsValidOrigin) ?? false,
         "Cors:AllowedOrigins 必须是有效的 origin，例如 https://menu.example.com")
     .ValidateOnStart();
+builder.Services.AddOptions<FamilyOptions>()
+    .Bind(builder.Configuration.GetSection(FamilyOptions.SectionName))
+    .Validate(options => TimeZoneInfo.TryFindSystemTimeZoneById(options.TimeZone, out _),
+        "Family:TimeZone 不是有效的时区 ID；Linux 容器需要安装 tzdata")
+    .ValidateOnStart();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=family.db"));
@@ -142,6 +147,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IFamilyClock, FamilyClock>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
 builder.Services.AddScoped<IDishService, DishService>();

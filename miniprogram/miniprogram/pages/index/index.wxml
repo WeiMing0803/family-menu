@@ -30,21 +30,25 @@
     <view class="order-card">
       <view class="card-header">
         <text class="card-title">今日点餐</text>
-        <text class="muted">{{order.items.length}} 道菜</text>
+        <text class="muted">{{items.length}} 道菜</text>
       </view>
-      <view wx:if="{{!order.items.length}}" class="empty-card compact">
+      <view wx:if="{{!items.length}}" class="empty-card compact">
         <text class="muted">还没有想吃的，去菜单挑一道吧。</text>
         <button class="primary-button small-button" bindtap="goMenu">打开菜单</button>
       </view>
       <block wx:else>
-        <view wx:for="{{order.items}}" wx:for-index="itemIndex" wx:key="id" class="order-item {{itemIndex === order.items.length - 1 ? 'last-order-item' : ''}}">
+        <view wx:for="{{items}}" wx:for-index="itemIndex" wx:key="id" class="order-item status-{{item.status}} {{itemIndex === items.length - 1 ? 'last-order-item' : ''}}">
           <view class="dish-dot"></view>
-          <view class="item-main">
-            <text class="item-name">{{item.dishName}}</text>
+          <view class="item-main" data-id="{{item.id}}" bindtap="openItemActions">
+            <view class="item-title-row">
+              <text class="item-name">{{item.dishName}}</text>
+              <text wx:if="{{item.statusLabel}}" class="status-tag">{{item.statusLabel}}</text>
+            </view>
             <text class="muted">{{item.category}}<block wx:if="{{item.remark}}"> · {{item.remark}}</block></text>
           </view>
-          <text class="quantity">×{{item.quantity}}</text>
+          <view class="more-button" data-id="{{item.id}}" bindtap="openItemActions" aria-role="button" aria-label="更多操作">⋯</view>
         </view>
+        <text class="item-hint">点击菜名可标记已做完、不吃了或添加备注</text>
         <view class="order-actions">
           <button class="clear-order-button" bindtap="clearOrder">清空今日点餐</button>
         </view>

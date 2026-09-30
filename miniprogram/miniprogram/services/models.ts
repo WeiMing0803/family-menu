@@ -39,6 +39,8 @@ export interface DishResponse {
   updatedAt: string
 }
 
+export type OrderItemStatus = 'Pending' | 'Done' | 'Cancelled'
+
 export interface OrderItemResponse {
   id: number
   dishId: number
@@ -46,9 +48,16 @@ export interface OrderItemResponse {
   category: string
   quantity: number
   remark?: string | null
-  status: 'Pending' | 'Done' | 'Cancelled' | string
+  status: OrderItemStatus | string
   addedBy: number
   createdAt: string
+}
+
+export interface DishStatResponse {
+  dishId: number
+  dishName: string
+  category: string
+  times: number
 }
 
 export interface OrderResponse {

@@ -43,6 +43,12 @@ public sealed record OrderItemResponse(
             item.Quantity, item.Remark, item.Status, item.AddedBy, item.CreatedAt);
 }
 
+public sealed record DishStatResponse(
+    int DishId,
+    string DishName,
+    string Category,
+    int Times);
+
 public sealed record OrderResponse(
     int? Id,
     DateTime OrderDate,
