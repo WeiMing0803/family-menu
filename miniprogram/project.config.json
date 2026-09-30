@@ -37,7 +37,7 @@
     "disableUseStrict": false,
     "minifyWXML": true,
     "lessSetting": {
-      "commonUseFilePath": "app.less"
+      "commonUseFilePath": "styles/mixins.less"
     }
   },
   "simulatorType": "wechat",

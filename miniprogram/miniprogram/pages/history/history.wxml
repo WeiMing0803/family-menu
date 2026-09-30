@@ -1,42 +1,68 @@
-<navigation-bar title="点餐历史" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
-<view class="page page-content">
-  <view class="history-heading">
-    <text class="title">一起吃过的饭</text>
-    <text class="muted">最近 100 条记录</text>
+<navigation-bar title="" back="{{false}}" background="#F7F5EE"></navigation-bar>
+<view class="page">
+  <view class="page-header">
+    <view>
+      <text class="page-eyebrow">最近 100 次点餐</text>
+      <text class="page-title">一起吃过的饭</text>
+    </view>
   </view>
-  <view wx:if="{{errorMessage}}" class="error-text">
+
+  <view wx:if="{{errorMessage}}" class="error-banner">
     <text>{{errorMessage}}</text>
-    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+    <van-button size="small" round plain type="danger" bind:click="load">重试</van-button>
   </view>
-  <view wx:elif="{{loading}}" class="empty-card"><text>正在读取历史记录…</text></view>
-  <view wx:elif="{{!orders.length}}" class="empty-card"><text class="muted">还没有历史点餐记录。</text></view>
-  <view wx:else class="history-list">
+
+  <view wx:if="{{loading}}" class="loading-state">
+    <van-loading size="36rpx" color="#86918A" />
+    <text>正在读取历史记录…</text>
+  </view>
+
+  <empty-state wx:elif="{{!hasFamily}}" icon="friends-o" title="加入家庭后记录每一顿饭" description="点过的菜会按天保存在这里。">
+    <van-button type="primary" round bind:click="goFamily">去创建或加入</van-button>
+  </empty-state>
+
+  <empty-state wx:elif="{{!orders.length && !errorMessage}}" icon="clock-o" title="还没有点餐记录" description="今天点的菜，明天就会出现在这里。">
+    <van-button type="primary" round plain bind:click="goMenu">去菜单挑菜</van-button>
+  </empty-state>
+
+  <block wx:elif="{{orders.length}}">
     <view wx:if="{{topDishes.length}}" class="stats-card">
       <view class="stats-header">
         <text class="stats-title">近 7 天常吃</text>
-        <text class="muted stats-subtitle">按点餐次数</text>
+        <text class="stats-subtitle">按点餐次数</text>
       </view>
       <view wx:for="{{topDishes}}" wx:key="dishId" class="stat-row">
-        <text class="stat-rank rank-{{item.rank}}">{{item.rank}}</text>
+        <text class="stat-rank {{item.rank === 1 ? 'first' : ''}}">{{item.rank}}</text>
         <view class="stat-main">
-          <text class="stat-name">{{item.dishName}}</text>
+          <view class="stat-line">
+            <text class="stat-name ellipsis">{{item.dishName}}</text>
+            <text class="stat-times">{{item.times}} 次</text>
+          </view>
           <view class="stat-bar"><view class="stat-bar-fill" style="width: {{item.barWidth}}%"></view></view>
         </view>
-        <text class="stat-times">{{item.times}} 次</text>
       </view>
     </view>
-    <view wx:for="{{orders}}" wx:key="id" class="history-card">
-      <view class="history-header">
-        <view class="date-group">
-          <text class="date">{{item.displayDate}}</text>
-          <text wx:if="{{item.displayTime}}" class="time">{{item.displayTime}}</text>
+
+    <view class="section-title"><text>按天记录</text></view>
+    <view class="timeline">
+      <view wx:for="{{orders}}" wx:for-item="order" wx:key="id" class="timeline-item">
+        <view class="timeline-dot {{order.status === 'Cancelled' ? 'muted' : ''}}"></view>
+        <view class="order-card {{order.status === 'Cancelled' ? 'cancelled' : ''}}">
+          <view class="order-header">
+            <view class="order-date">
+              <text wx:if="{{order.relative}}" class="relative-day">{{order.relative}}</text>
+              <text>{{order.dateText}}</text>
+            </view>
+            <van-tag type="{{order.statusType}}" plain round>{{order.statusLabel}}</van-tag>
+          </view>
+          <view wx:for="{{order.items}}" wx:key="id" class="order-item">
+            <dish-avatar name="{{item.dishName}}" category="{{item.category}}" size="sm" state="{{item.status === 'Cancelled' || order.status === 'Cancelled' ? 'muted' : ''}}" />
+            <text class="item-name ellipsis {{item.status === 'Cancelled' ? 'skipped' : ''}}">{{item.dishName}}<block wx:if="{{item.quantity > 1}}"> ×{{item.quantity}}</block></text>
+            <text wx:if="{{item.statusLabel}}" class="item-status status-{{item.status}}">{{item.statusLabel}}</text>
+          </view>
+          <text class="order-footer">{{order.items.length}} 道菜<block wx:if="{{order.timeText}}"> · {{order.timeText}} 开始点</block></text>
         </view>
-        <text class="status">{{item.displayStatus}}</text>
-      </view>
-      <view wx:for="{{item.items}}" wx:key="id" class="history-item">
-        <text>{{item.dishName}}</text>
-        <text wx:if="{{item.quantity > 1}}" class="muted">×{{item.quantity}}</text>
       </view>
     </view>
-  </view>
+  </block>
 </view>

@@ -9,20 +9,58 @@
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationStyle": "custom"
+    "navigationStyle": "custom",
+    "backgroundColor": "#F7F5EE",
+    "backgroundTextStyle": "dark"
   },
-  "style": "v2",
   "tabBar": {
-    "color": "#8b8178",
-    "selectedColor": "#e57442",
-    "backgroundColor": "#fffaf5",
+    "color": "#86918A",
+    "selectedColor": "#3F8F62",
+    "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/index/index", "text": "今日" },
-      { "pagePath": "pages/menu/menu", "text": "菜单" },
-      { "pagePath": "pages/history/history", "text": "历史" },
-      { "pagePath": "pages/family/family", "text": "家庭" }
+      {
+        "pagePath": "pages/index/index",
+        "text": "今日",
+        "iconPath": "assets/tabbar/today.png",
+        "selectedIconPath": "assets/tabbar/today-active.png"
+      },
+      {
+        "pagePath": "pages/menu/menu",
+        "text": "菜单",
+        "iconPath": "assets/tabbar/menu.png",
+        "selectedIconPath": "assets/tabbar/menu-active.png"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史",
+        "iconPath": "assets/tabbar/history.png",
+        "selectedIconPath": "assets/tabbar/history-active.png"
+      },
+      {
+        "pagePath": "pages/family/family",
+        "text": "家庭",
+        "iconPath": "assets/tabbar/family.png",
+        "selectedIconPath": "assets/tabbar/family-active.png"
+      }
     ]
+  },
+  "usingComponents": {
+    "navigation-bar": "/components/navigation-bar/navigation-bar",
+    "dish-avatar": "/components/dish-avatar/dish-avatar",
+    "empty-state": "/components/empty-state/empty-state",
+    "van-button": "@vant/weapp/button/index",
+    "van-icon": "@vant/weapp/icon/index",
+    "van-search": "@vant/weapp/search/index",
+    "van-swipe-cell": "@vant/weapp/swipe-cell/index",
+    "van-action-sheet": "@vant/weapp/action-sheet/index",
+    "van-popup": "@vant/weapp/popup/index",
+    "van-field": "@vant/weapp/field/index",
+    "van-tag": "@vant/weapp/tag/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-switch": "@vant/weapp/switch/index",
+    "van-loading": "@vant/weapp/loading/index"
   },
   "rendererOptions": {
     "skyline": {

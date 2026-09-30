@@ -1,49 +1,41 @@
 import { login } from '../../services/auth'
 import {
-  ApiError,
   clearTodayOrder,
   deleteOrderItem,
   getFamilyOrNull,
+  getMembers,
   getTodayOrder,
   updateOrderItem
 } from '../../services/api'
-import type { FamilyResponse, OrderItemResponse, OrderItemStatus, OrderResponse } from '../../services/models'
-import { shortDate } from '../../utils/date'
+import type { FamilyResponse, MemberResponse, OrderItemResponse, OrderItemStatus, OrderResponse } from '../../services/models'
+import { dayLabel } from '../../utils/date'
+import { confirmAction, errorText, isUnauthorized, nameInitial, promptText, toast } from '../../utils/ui'
+import type { DetailEvent } from '../../utils/ui'
 import { startRealtime, stopRealtime, subscribeRealtime } from '../../services/realtime'
 
 const app = getApp<IAppOption>()
 let unsubscribers: Array<() => void> = []
 
-const statusLabels: Record<string, string> = {
-  Done: '已做完',
-  Cancelled: '不吃了'
-}
-
-type OrderItemView = OrderItemResponse & { statusLabel: string }
-
-function toItemViews(order: OrderResponse): OrderItemView[] {
-  return order.items.map((item) => ({ ...item, statusLabel: statusLabels[item.status] || '' }))
-}
-
-function errorText(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? error.message : fallback
-}
-
-function confirm(title: string, content: string, confirmColor = '#e57442'): Promise<boolean> {
-  return new Promise((resolve) => {
-    wx.showModal({ title, content, confirmColor, success: (result) => resolve(result.confirm), fail: () => resolve(false) })
-  })
-}
+type ItemView = OrderItemResponse & { addedByName: string }
+type MemberView = MemberResponse & { initial: string; isMe: boolean }
+type SheetAction = { name: string; key: string; color?: string }
 
 Page({
   data: {
     loading: true,
-    family: null as FamilyResponse | null,
-    order: null as OrderResponse | null,
-    items: [] as OrderItemView[],
-    busyItemId: 0,
     errorMessage: '',
-    todayLabel: ''
+    family: null as FamilyResponse | null,
+    members: [] as MemberView[],
+    dateLabel: '',
+    pending: [] as ItemView[],
+    done: [] as ItemView[],
+    cancelled: [] as ItemView[],
+    itemCount: 0,
+    busyItemId: 0,
+    sheetShow: false,
+    sheetTitle: '',
+    sheetActions: [] as SheetAction[],
+    sheetItemId: 0
   },
 
   onShow() {
@@ -61,16 +53,26 @@ Page({
     unsubscribers = []
   },
 
-  applyOrder(order: OrderResponse): void {
+  async onPullDownRefresh() {
+    await this.load()
+    wx.stopPullDownRefresh()
+  },
+
+  applyOrder(order: OrderResponse, memberList?: MemberView[]): void {
+    const members = memberList || this.data.members
+    const names = new Map(members.map((member) => [member.id, member.isMe ? '我' : member.nickName]))
+    const items: ItemView[] = order.items.map((item) => ({ ...item, addedByName: names.get(item.addedBy) || '' }))
     this.setData({
-      order,
-      items: toItemViews(order),
-      todayLabel: shortDate(order.orderDate)
+      dateLabel: dayLabel(order.orderDate),
+      pending: items.filter((item) => item.status === 'Pending'),
+      done: items.filter((item) => item.status === 'Done'),
+      cancelled: items.filter((item) => item.status === 'Cancelled'),
+      itemCount: items.length
     })
   },
 
   async load(): Promise<void> {
-    this.setData({ loading: !this.data.order, errorMessage: '' })
+    this.setData({ loading: !this.data.family, errorMessage: '' })
     try {
       const auth = await login()
       app.globalData.user = auth.user
@@ -78,33 +80,30 @@ Page({
       app.globalData.family = family
       if (!family) {
         void stopRealtime()
-        this.setData({ loading: false, family: null, order: null, items: [] })
+        this.setData({ loading: false, family: null, members: [] })
         return
       }
-      // Realtime updates are optional; a socket setup failure must not block
-      // the initial HTTP requests that populate the home page.
+      // 实时连接失败不能影响首页的 HTTP 数据加载。
       try {
         startRealtime()
       } catch (error) {
         console.error('[今日页] 实时连接启动失败', error)
       }
-      const order = await getTodayOrder()
-      this.setData({ loading: false, family })
-      this.applyOrder(order)
+      const [order, memberList] = await Promise.all([getTodayOrder(), getMembers()])
+      const members = memberList.map((member) => ({
+        ...member,
+        initial: nameInitial(member.nickName),
+        isMe: member.id === auth.user.id
+      }))
+      this.setData({ loading: false, family, members })
+      this.applyOrder(order, members)
     } catch (error) {
       console.error('[今日页] 加载失败', error)
-      if (error instanceof ApiError && error.statusCode === 401) {
+      if (isUnauthorized(error)) {
         wx.reLaunch({ url: '/pages/login/login' })
         return
       }
-      const message = error instanceof ApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error !== null && 'errMsg' in error
-            ? String((error as { errMsg?: unknown }).errMsg || '暂时无法加载今日点餐')
-            : '暂时无法加载今日点餐'
-      this.setData({ loading: false, errorMessage: message })
+      this.setData({ loading: false, errorMessage: errorText(error, '暂时无法加载今日点餐') })
     }
   },
 
@@ -116,9 +115,8 @@ Page({
     wx.switchTab({ url: '/pages/menu/menu' })
   },
 
-  findItem(event: WechatMiniprogram.TouchEvent): OrderItemView | undefined {
-    const itemId = Number(event.currentTarget.dataset.id)
-    return this.data.items.find((item) => item.id === itemId)
+  findItem(itemId: number): ItemView | undefined {
+    return [...this.data.pending, ...this.data.done, ...this.data.cancelled].find((item) => item.id === itemId)
   },
 
   async runItemAction(itemId: number, action: () => Promise<OrderResponse | void>): Promise<void> {
@@ -129,69 +127,81 @@ Page({
       if (order) this.applyOrder(order)
       else await this.load()
     } catch (error) {
-      wx.showToast({ title: errorText(error, '操作失败'), icon: 'none' })
+      toast(errorText(error, '操作失败'))
     } finally {
       this.setData({ busyItemId: 0 })
     }
   },
 
+  setStatus(itemId: number, status: OrderItemStatus): void {
+    void this.runItemAction(itemId, () => updateOrderItem(itemId, { status }))
+  },
+
+  markDone(event: WechatMiniprogram.TouchEvent): void {
+    this.setStatus(Number(event.currentTarget.dataset.id), 'Done')
+  },
+
+  restore(event: WechatMiniprogram.TouchEvent): void {
+    this.setStatus(Number(event.currentTarget.dataset.id), 'Pending')
+  },
+
   openItemActions(event: WechatMiniprogram.TouchEvent): void {
-    const item = this.findItem(event)
+    const item = this.findItem(Number(event.currentTarget.dataset.id))
     if (!item || this.data.busyItemId) return
-
-    const actions: Array<{ label: string; run: () => void }> = item.status === 'Pending'
-      ? [
-          { label: '已做完', run: () => this.setItemStatus(item, 'Done') },
-          { label: '不吃了', run: () => this.setItemStatus(item, 'Cancelled') }
-        ]
-      : [{ label: '恢复为想吃', run: () => this.setItemStatus(item, 'Pending') }]
+    const actions: SheetAction[] = item.status === 'Pending'
+      ? [{ name: '已做完', key: 'done' }, { name: '不吃了', key: 'cancel' }]
+      : [{ name: '恢复为想吃', key: 'restore' }]
     actions.push(
-      { label: item.remark ? '修改备注' : '添加备注', run: () => void this.editRemark(item) },
-      { label: '删除这道菜', run: () => void this.removeItem(item) }
+      { name: item.remark ? '修改备注' : '添加备注', key: 'remark' },
+      { name: '删除', key: 'delete', color: '#c8553d' }
     )
-
-    wx.showActionSheet({
-      alertText: item.dishName,
-      itemList: actions.map((action) => action.label),
-      success: (result) => actions[result.tapIndex]?.run()
-    })
+    this.setData({ sheetShow: true, sheetTitle: item.dishName, sheetActions: actions, sheetItemId: item.id })
   },
 
-  setItemStatus(item: OrderItemView, status: OrderItemStatus): void {
-    void this.runItemAction(item.id, () => updateOrderItem(item.id, { status }))
+  closeSheet(): void {
+    this.setData({ sheetShow: false })
   },
 
-  async editRemark(item: OrderItemView): Promise<void> {
-    const remark = await new Promise<string | null>((resolve) => {
-      wx.showModal({
-        title: `备注：${item.dishName}`,
-        editable: true,
-        placeholderText: '例如：少辣、多放葱',
-        content: item.remark || '',
-        confirmColor: '#e57442',
-        success: (result) => resolve(result.confirm ? (result.content || '') : null),
-        fail: () => resolve(null)
-      })
-    })
+  onSheetSelect(event: DetailEvent<SheetAction>): void {
+    const itemId = this.data.sheetItemId
+    this.setData({ sheetShow: false })
+    switch (event.detail.key) {
+      case 'done': this.setStatus(itemId, 'Done'); break
+      case 'cancel': this.setStatus(itemId, 'Cancelled'); break
+      case 'restore': this.setStatus(itemId, 'Pending'); break
+      case 'remark': void this.editRemark(itemId); break
+      case 'delete': void this.removeItem(itemId); break
+    }
+  },
+
+  async editRemark(itemId: number): Promise<void> {
+    const item = this.findItem(itemId)
+    if (!item) return
+    const remark = await promptText(`备注：${item.dishName}`, item.remark || '', '例如：少辣、多放葱')
     if (remark === null) return
     // 空字符串会被后端视为清除备注。
-    await this.runItemAction(item.id, () => updateOrderItem(item.id, { remark: remark.trim().slice(0, 500) }))
+    await this.runItemAction(itemId, () => updateOrderItem(itemId, { remark: remark.trim().slice(0, 500) }))
   },
 
-  async removeItem(item: OrderItemView): Promise<void> {
-    if (!await confirm('删除这道菜？', `将「${item.dishName}」从今日点餐中移除。`, '#bd4b38')) return
-    await this.runItemAction(item.id, () => deleteOrderItem(item.id))
+  onSwipeDelete(event: WechatMiniprogram.TouchEvent): void {
+    void this.removeItem(Number(event.currentTarget.dataset.id))
+  },
+
+  async removeItem(itemId: number): Promise<void> {
+    const item = this.findItem(itemId)
+    if (!item) return
+    if (!await confirmAction('删除这道菜？', `将「${item.dishName}」从今日点餐中移除。`, { confirmText: '删除', danger: true })) return
+    await this.runItemAction(itemId, () => deleteOrderItem(itemId))
   },
 
   async clearOrder(): Promise<void> {
-    if (!await confirm('清空今日点餐？', '清空后仍可在历史记录中查看。')) return
-
+    if (!await confirmAction('清空今日点餐？', '清空后仍可在历史记录中查看。', { confirmText: '清空', danger: true })) return
     try {
       await clearTodayOrder()
-      wx.showToast({ title: '已清空', icon: 'success' })
+      toast('已清空', 'success')
       await this.load()
     } catch (error) {
-      wx.showToast({ title: errorText(error, '操作失败'), icon: 'none' })
+      toast(errorText(error, '操作失败'))
     }
   }
 })

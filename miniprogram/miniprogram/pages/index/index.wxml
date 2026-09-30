@@ -1,58 +1,92 @@
-<navigation-bar title="今日想吃" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
-<view class="page page-content">
-  <view class="home-heading">
-    <text class="eyebrow">FAMILY MENU</text>
-    <text class="title">今天吃什么？</text>
-    <text class="muted">一起选，按时吃饭。</text>
+<template name="order-row">
+  <van-swipe-cell right-width="{{72}}">
+    <view class="order-row {{last ? 'last' : ''}} status-{{status}}" data-id="{{id}}" bindtap="openItemActions">
+      <dish-avatar name="{{dishName}}" category="{{category}}" state="{{status === 'Done' ? 'done' : status === 'Cancelled' ? 'muted' : ''}}" />
+      <view class="row-main">
+        <text class="row-name ellipsis">{{dishName}}</text>
+        <text class="row-meta ellipsis">{{category}}<block wx:if="{{addedByName}}"> · {{addedByName}}点的</block><block wx:if="{{remark}}"> · {{remark}}</block></text>
+      </view>
+      <view wx:if="{{status === 'Pending'}}" class="done-button" data-id="{{id}}" catchtap="markDone" aria-role="button" aria-label="标记已做完">
+        <van-icon name="success" size="32rpx" />
+      </view>
+      <van-tag wx:elif="{{status === 'Done'}}" type="primary" plain round>已做完</van-tag>
+      <text wx:else class="restore-link" data-id="{{id}}" catchtap="restore">恢复</text>
+    </view>
+    <view slot="right" class="swipe-delete" data-id="{{id}}" bindtap="onSwipeDelete">删除</view>
+  </van-swipe-cell>
+</template>
+
+<navigation-bar title="" back="{{false}}" background="#F7F5EE"></navigation-bar>
+<view class="page">
+  <view class="page-header">
+    <view>
+      <text class="page-eyebrow">{{dateLabel}}<block wx:if="{{family}}"> · {{family.name}}</block></text>
+      <text class="page-title">今天吃什么</text>
+    </view>
+    <view wx:if="{{members.length}}" class="member-stack" bindtap="goFamily" aria-role="button" aria-label="查看家庭成员">
+      <view wx:for="{{members}}" wx:key="id" class="member-avatar {{item.isMe ? 'me' : ''}}">{{item.initial}}</view>
+    </view>
   </view>
 
-  <view wx:if="{{errorMessage}}" class="error-text">
+  <view wx:if="{{errorMessage}}" class="error-banner">
     <text>{{errorMessage}}</text>
-    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+    <van-button size="small" round plain type="danger" bind:click="load">重试</van-button>
   </view>
-  <view wx:elif="{{loading}}" class="empty-card">
+
+  <view wx:if="{{loading}}" class="loading-state">
+    <van-loading size="36rpx" color="#86918A" />
     <text>正在准备今天的菜单…</text>
   </view>
-  <view wx:elif="{{!family}}" class="welcome-card">
-    <text class="card-title">先建立一个家庭</text>
-    <text class="muted">创建家庭或输入邀请码，和家人共享菜单。</text>
-    <button class="primary-button" bindtap="goFamily">去家庭管理</button>
-  </view>
-  <block wx:else>
-    <view class="family-banner">
-      <view>
-        <text class="family-name">{{family.name}}</text>
-        <text class="muted">{{todayLabel}}</text>
-      </view>
-      <text class="member-count">{{family.memberCount}} 位成员</text>
-    </view>
 
-    <view class="order-card">
-      <view class="card-header">
-        <text class="card-title">今日点餐</text>
-        <text class="muted">{{items.length}} 道菜</text>
+  <empty-state wx:elif="{{!family && !errorMessage}}" icon="friends-o" title="先建立一个家庭" description="创建家庭或输入邀请码，和家人共享菜单。">
+    <van-button type="primary" round bind:click="goFamily">去创建或加入</van-button>
+  </empty-state>
+
+  <block wx:elif="{{family}}">
+    <empty-state wx:if="{{!itemCount}}" icon="smile-o" title="还没有想吃的" description="去菜单挑几道，家人会实时看到。">
+      <van-button type="primary" round bind:click="goMenu">去菜单挑菜</van-button>
+    </empty-state>
+
+    <block wx:if="{{pending.length}}">
+      <view class="section-title"><text>想吃 · {{pending.length}}</text><text class="section-hint">点击更多 · 左滑删除</text></view>
+      <view class="card list-card">
+        <block wx:for="{{pending}}" wx:key="id">
+          <template is="order-row" data="{{...item, last: index === pending.length - 1}}" />
+        </block>
       </view>
-      <view wx:if="{{!items.length}}" class="empty-card compact">
-        <text class="muted">还没有想吃的，去菜单挑一道吧。</text>
-        <button class="primary-button small-button" bindtap="goMenu">打开菜单</button>
+    </block>
+
+    <block wx:if="{{done.length}}">
+      <view class="section-title"><text>已做完 · {{done.length}}</text></view>
+      <view class="card list-card">
+        <block wx:for="{{done}}" wx:key="id">
+          <template is="order-row" data="{{...item, last: index === done.length - 1}}" />
+        </block>
       </view>
-      <block wx:else>
-        <view wx:for="{{items}}" wx:for-index="itemIndex" wx:key="id" class="order-item status-{{item.status}} {{itemIndex === items.length - 1 ? 'last-order-item' : ''}}">
-          <view class="dish-dot"></view>
-          <view class="item-main" data-id="{{item.id}}" bindtap="openItemActions">
-            <view class="item-title-row">
-              <text class="item-name">{{item.dishName}}</text>
-              <text wx:if="{{item.statusLabel}}" class="status-tag">{{item.statusLabel}}</text>
-            </view>
-            <text class="muted">{{item.category}}<block wx:if="{{item.remark}}"> · {{item.remark}}</block></text>
-          </view>
-          <view class="more-button" data-id="{{item.id}}" bindtap="openItemActions" aria-role="button" aria-label="更多操作">⋯</view>
-        </view>
-        <text class="item-hint">点击菜名可标记已做完、不吃了或添加备注</text>
-        <view class="order-actions">
-          <button class="clear-order-button" bindtap="clearOrder">清空今日点餐</button>
-        </view>
-      </block>
+    </block>
+
+    <block wx:if="{{cancelled.length}}">
+      <view class="section-title"><text>不吃了 · {{cancelled.length}}</text></view>
+      <view class="card list-card">
+        <block wx:for="{{cancelled}}" wx:key="id">
+          <template is="order-row" data="{{...item, last: index === cancelled.length - 1}}" />
+        </block>
+      </view>
+    </block>
+
+    <view wx:if="{{itemCount}}" class="text-button danger clear-button" bindtap="clearOrder">
+      <van-icon name="delete-o" />
+      <text>清空今日点餐</text>
     </view>
   </block>
 </view>
+
+<van-action-sheet
+  show="{{sheetShow}}"
+  actions="{{sheetActions}}"
+  description="{{sheetTitle}}"
+  cancel-text="取消"
+  bind:select="onSheetSelect"
+  bind:close="closeSheet"
+  bind:cancel="closeSheet"
+/>

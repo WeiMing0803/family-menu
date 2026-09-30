@@ -1,76 +1,37 @@
-.form-card {
-  background: #fff;
-  padding: 0 28rpx;
-  border-radius: 24rpx;
-  margin: 18rpx 0 28rpx;
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 0 40rpx;
 }
 
-.field {
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid #f1ece7;
+.preview-name {
+  max-width: 100%;
+  margin-top: 20rpx;
+  font-size: 36rpx;
+  font-weight: 600;
 }
 
-.last-field {
-  border-bottom: 0;
-}
-
-.label {
-  display: block;
-  margin-bottom: 14rpx;
-  color: #6e625a;
+.preview-meta {
+  margin-top: 4rpx;
+  color: var(--c-muted);
   font-size: 24rpx;
 }
 
-input,
-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 30rpx;
+.form-card {
+  border-radius: var(--radius-lg);
+  background: var(--c-card);
+  overflow: hidden;
 }
 
-textarea {
-  min-height: 160rpx;
+.favorite-card {
+  margin-top: 32rpx;
 }
 
-.picker-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 64rpx;
-  font-size: 30rpx;
+.actions {
+  margin-top: 56rpx;
 }
 
-.picker-hint,
-.character-count {
-  color: #a89b92;
-  font-size: 22rpx;
-}
-
-.character-count {
-  display: block;
-  margin-top: 8rpx;
-  text-align: right;
-}
-
-.form-actions {
-  display: flex;
-  gap: 18rpx;
-}
-
-.form-actions button {
-  flex: 1;
-  min-width: 0;
-}
-
-.delete-dish-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  height: 80rpx;
-  margin-top: 36rpx;
-  color: #bd4b38;
-  background: transparent;
-  font-size: 26rpx;
-  line-height: normal;
+.actions .text-button {
+  margin-top: 16rpx;
 }

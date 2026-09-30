@@ -1,25 +1,37 @@
 <view class="login-page">
-  <view class="login-brand">
-    <text class="brand-mark">⌂</text>
-    <text class="brand-name">Family Menu</text>
-    <text class="muted">把每一顿饭，变成共同的小事。</text>
+  <view class="brand">
+    <view class="brand-logo"><image src="/assets/logo.png" mode="aspectFit" aria-hidden="true" /></view>
+    <text class="brand-name">家庭点餐</text>
+    <text class="brand-slogan">把每一顿饭，变成共同的小事。</text>
   </view>
-  <view wx:if="{{isDevelopment}}" class="identity-list">
-    <text class="identity-title">选择测试身份</text>
-    <view
-      wx:for="{{identities}}"
-      wx:key="openId"
-      class="identity-option {{selectedOpenId === item.openId ? 'selected' : ''}}"
-      data-openid="{{item.openId}}"
-      bindtap="selectIdentity"
-      aria-role="radio"
-      aria-checked="{{selectedOpenId === item.openId}}"
-    >
-      <text class="identity-name">{{item.nickName}}</text>
-      <text class="identity-id">{{item.openId}}</text>
+
+  <view class="login-panel">
+    <block wx:if="{{isDevelopment}}">
+      <text class="panel-title">选择测试身份</text>
+      <view
+        wx:for="{{identities}}"
+        wx:key="openId"
+        class="identity {{selectedOpenId === item.openId ? 'selected' : ''}}"
+        data-openid="{{item.openId}}"
+        bindtap="selectIdentity"
+        aria-role="radio"
+        aria-checked="{{selectedOpenId === item.openId}}"
+      >
+        <view class="identity-avatar">{{item.initial}}</view>
+        <view class="identity-info">
+          <text class="identity-name">{{item.nickName}}</text>
+          <text class="identity-id">{{item.openId}}</text>
+        </view>
+        <van-icon wx:if="{{selectedOpenId === item.openId}}" name="checked" size="44rpx" color="var(--c-primary)" />
+        <view wx:else class="identity-radio"></view>
+      </view>
+    </block>
+
+    <view wx:if="{{errorMessage}}" class="error-banner">{{errorMessage}}</view>
+
+    <view class="login-action">
+      <van-button type="primary" size="large" round block loading="{{loading}}" loading-text="正在登录…" bind:click="startLogin">{{loginButtonText}}</van-button>
     </view>
+    <text class="login-hint">{{loginHint}}</text>
   </view>
-  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
-  <button class="primary-button" loading="{{loading}}" disabled="{{loading}}" bindtap="startLogin">{{loginButtonText}}</button>
-  <text class="login-hint">{{loginHint}}</text>
 </view>

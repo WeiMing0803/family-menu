@@ -15,5 +15,7 @@ export const STORAGE_KEYS = {
   token: 'family-menu-token',
   user: 'family-menu-user',
   devOpenId: 'family-menu-dev-openid',
-  devNickName: 'family-menu-dev-nickname'
+  devNickName: 'family-menu-dev-nickname',
+  /** 通过分享链接打开时暂存的邀请码，登录后在家庭页自动填入 */
+  pendingInvite: 'family-menu-pending-invite'
 } as const

@@ -1,29 +1,72 @@
-<navigation-bar title="{{isEdit ? '编辑菜品' : '添加菜品'}}" back="{{true}}" color="#332b26" background="#f8f5f1"></navigation-bar>
-<view class="page page-content">
-  <view wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</view>
-  <view class="form-card">
-    <view class="field">
-      <text class="label">菜名</text>
-      <input value="{{name}}" placeholder="例如：番茄炒蛋" maxlength="100" bindinput="onNameInput" />
-    </view>
-    <view class="field">
-      <text class="label">分类</text>
-      <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
-        <view class="picker-field">
-          <text>{{category}}</text>
-          <text class="picker-hint">选择分类</text>
-        </view>
-      </picker>
-    </view>
-    <view class="field last-field">
-      <text class="label">备注</text>
-      <textarea value="{{remark}}" placeholder="口味、食材或烹饪提示（可选）" maxlength="500" bindinput="onRemarkInput" />
-      <text class="character-count">{{remark.length}}/500</text>
-    </view>
+<navigation-bar title="{{isEdit ? '编辑菜品' : '添加菜品'}}" back="{{true}}" color="#2C3630" background="#F7F5EE"></navigation-bar>
+<view class="page">
+  <view wx:if="{{loading}}" class="loading-state">
+    <van-loading size="36rpx" color="#86918A" />
+    <text>正在读取菜品…</text>
   </view>
-  <view class="form-actions">
-    <button class="secondary-button" disabled="{{saving || deleting}}" bindtap="cancel">取消</button>
-    <button class="primary-button" loading="{{saving}}" disabled="{{saving || deleting}}" bindtap="save">保存菜品</button>
-  </view>
-  <button wx:if="{{isEdit}}" class="delete-dish-button" loading="{{deleting}}" disabled="{{saving || deleting}}" bindtap="remove">删除这道菜</button>
+
+  <block wx:else>
+    <view class="preview">
+      <dish-avatar name="{{name || '菜'}}" category="{{category}}" size="lg" />
+      <text class="preview-name ellipsis">{{name || '给这道菜起个名字'}}</text>
+      <text class="preview-meta">{{category}}<block wx:if="{{isFavorite}}"> · 喜欢</block></text>
+    </view>
+
+    <view wx:if="{{errorMessage}}" class="error-banner">{{errorMessage}}</view>
+
+    <view class="form-card">
+      <van-field
+        value="{{name}}"
+        label="菜名"
+        placeholder="例如：番茄炒蛋"
+        maxlength="{{100}}"
+        clearable
+        required
+        error-message="{{nameError}}"
+        bind:change="onNameChange"
+      />
+    </view>
+
+    <view class="section-title"><text>分类</text></view>
+    <view class="chip-row">
+      <view
+        wx:for="{{categories}}"
+        wx:key="*this"
+        class="chip {{category === item ? 'active' : ''}}"
+        data-category="{{item}}"
+        bindtap="selectCategory"
+        aria-role="radio"
+        aria-checked="{{category === item}}"
+      >{{item}}</view>
+    </view>
+
+    <view class="section-title"><text>备注</text></view>
+    <view class="form-card">
+      <van-field
+        value="{{remark}}"
+        type="textarea"
+        placeholder="口味、食材或做法提示（可选）"
+        maxlength="{{500}}"
+        autosize="{{ { minHeight: 96 } }}"
+        show-word-limit
+        border="{{false}}"
+        bind:change="onRemarkChange"
+      />
+    </view>
+
+    <view class="form-card favorite-card">
+      <van-cell title="喜欢这道菜" label="会出现在菜单的「喜欢」筛选里" center border="{{false}}">
+        <van-switch slot="right-icon" checked="{{isFavorite}}" size="44rpx" bind:change="onFavoriteChange" />
+      </van-cell>
+    </view>
+
+    <view class="actions">
+      <van-button type="primary" size="large" round block loading="{{saving}}" loading-text="正在保存…" disabled="{{deleting}}" bind:click="save">保存</van-button>
+      <view wx:if="{{isEdit}}" class="text-button danger" bindtap="remove">
+        <van-loading wx:if="{{deleting}}" size="28rpx" color="#C8553D" />
+        <van-icon wx:else name="delete-o" />
+        <text>删除这道菜</text>
+      </view>
+    </view>
+  </block>
 </view>

@@ -1,0 +1,4 @@
+<view class="dish-avatar tone-{{tone}} size-{{size}} state-{{state}}" aria-hidden="true">
+  <van-icon wx:if="{{state === 'done'}}" name="success" />
+  <text wx:else>{{initial}}</text>
+</view>

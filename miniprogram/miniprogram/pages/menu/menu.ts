@@ -1,13 +1,16 @@
-import { addOrderItem, ApiError, getFamilyOrNull, getTodayOrder, listDishes, toggleFavorite } from '../../services/api'
+import { addOrderItem, getFamilyOrNull, getTodayOrder, listDishes, toggleFavorite } from '../../services/api'
 import { login } from '../../services/auth'
 import type { DishResponse, FamilyResponse } from '../../services/models'
 import { startRealtime, stopRealtime, subscribeRealtime } from '../../services/realtime'
+import { errorText, isUnauthorized, toast } from '../../utils/ui'
+import type { DetailEvent } from '../../utils/ui'
 
 const app = getApp<IAppOption>()
-let unsubscribeDishChanges: (() => void) | null = null
-let unsubscribeOrderChanges: (() => void) | null = null
+let unsubscribers: Array<() => void> = []
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let menuLoadVersion = 0
+
+type DishView = DishResponse & { ordered: boolean; selected: boolean }
 
 function clearSearchTimer(): void {
   if (searchTimer) clearTimeout(searchTimer)
@@ -17,36 +20,42 @@ function clearSearchTimer(): void {
 Page({
   data: {
     loading: true,
+    errorMessage: '',
     family: null as FamilyResponse | null,
-    dishes: [] as Array<DishResponse & { ordered: boolean; selected: boolean }>,
+    dishes: [] as DishView[],
     cartItems: [] as DishResponse[],
+    cartSummary: '',
     showCart: false,
     submittingCart: false,
     categories: ['全部', '早餐', '午餐', '晚餐', '其他'],
     currentCategory: '全部',
-    search: '',
-    errorMessage: ''
+    favoriteOnly: false,
+    search: ''
   },
 
   onShow() {
-    unsubscribeDishChanges?.()
-    unsubscribeDishChanges = subscribeRealtime('DishChanged', () => void this.load())
-    unsubscribeOrderChanges?.()
-    unsubscribeOrderChanges = subscribeRealtime('OrderChanged', () => void this.load())
+    unsubscribers.forEach((unsubscribe) => unsubscribe())
+    unsubscribers = [
+      subscribeRealtime('DishChanged', () => void this.load()),
+      subscribeRealtime('OrderChanged', () => void this.load())
+    ]
     void this.load()
   },
 
   onHide() {
-    unsubscribeDishChanges?.()
-    unsubscribeDishChanges = null
-    unsubscribeOrderChanges?.()
-    unsubscribeOrderChanges = null
+    unsubscribers.forEach((unsubscribe) => unsubscribe())
+    unsubscribers = []
     clearSearchTimer()
+  },
+
+  async onPullDownRefresh() {
+    await this.load()
+    wx.stopPullDownRefresh()
   },
 
   async load(): Promise<void> {
     const requestVersion = ++menuLoadVersion
-    this.setData({ loading: true, errorMessage: '' })
+    this.setData({ loading: !this.data.dishes.length, errorMessage: '' })
     try {
       const auth = await login()
       app.globalData.user = auth.user
@@ -55,7 +64,8 @@ Page({
       if (!family) {
         void stopRealtime()
         if (requestVersion === menuLoadVersion) {
-          this.setData({ loading: false, family: null, dishes: [], cartItems: [], showCart: false })
+          this.setData({ loading: false, family: null, dishes: [], showCart: false })
+          this.applyCart([])
         }
         return
       }
@@ -63,41 +73,58 @@ Page({
       const [dishes, order] = await Promise.all([
         listDishes({
           category: this.data.currentCategory === '全部' ? undefined : this.data.currentCategory,
-          search: this.data.search.trim() || undefined
+          search: this.data.search.trim() || undefined,
+          favorite: this.data.favoriteOnly || undefined
         }),
         getTodayOrder()
       ])
       if (requestVersion !== menuLoadVersion) return
-      const orderedDishIds = new Set(order.items.map((item) => item.dishId))
+      const orderedIds = new Set(order.items.map((item) => item.dishId))
+      // 已被家人点掉的菜从已选里移除；仍在已选里的用最新数据替换。
       const cartItems = this.data.cartItems
-        .filter((item) => !orderedDishIds.has(item.id))
+        .filter((item) => !orderedIds.has(item.id))
         .map((item) => dishes.find((dish) => dish.id === item.id) || item)
-      const remainingSelectedIds = new Set(cartItems.map((item) => item.id))
-      const dishesWithOrderState = dishes.map((dish) => ({
-        ...dish,
-        ordered: orderedDishIds.has(dish.id),
-        selected: remainingSelectedIds.has(dish.id)
-      }))
-      this.setData({ loading: false, family, dishes: dishesWithOrderState, cartItems })
+      const selectedIds = new Set(cartItems.map((item) => item.id))
+      this.setData({
+        loading: false,
+        family,
+        dishes: dishes.map((dish) => ({ ...dish, ordered: orderedIds.has(dish.id), selected: selectedIds.has(dish.id) }))
+      })
+      this.applyCart(cartItems)
     } catch (error) {
       if (requestVersion !== menuLoadVersion) return
-      if (error instanceof ApiError && error.statusCode === 401) {
+      if (isUnauthorized(error)) {
         wx.reLaunch({ url: '/pages/login/login' })
         return
       }
-      this.setData({ loading: false, errorMessage: error instanceof ApiError ? error.message : '暂时无法加载菜单' })
+      this.setData({ loading: false, errorMessage: errorText(error, '暂时无法加载菜单') })
     }
+  },
+
+  applyCart(cartItems: DishResponse[]): void {
+    const selectedIds = new Set(cartItems.map((item) => item.id))
+    this.setData({
+      cartItems,
+      cartSummary: cartItems.length ? `已选 ${cartItems.length} 道 · ${cartItems.map((item) => item.name).join('、')}` : '还没有选菜',
+      dishes: this.data.dishes.map((dish) => ({ ...dish, selected: selectedIds.has(dish.id) })),
+      showCart: this.data.showCart && cartItems.length > 0
+    })
   },
 
   selectCategory(event: WechatMiniprogram.TouchEvent): void {
     clearSearchTimer()
-    const category = event.currentTarget.dataset.category as string
-    this.setData({ currentCategory: category })
+    this.setData({ currentCategory: event.currentTarget.dataset.category as string })
     void this.load()
   },
 
-  onSearchInput(event: WechatMiniprogram.Input): void {
-    this.setData({ search: event.detail.value })
+  toggleFavoriteFilter(): void {
+    clearSearchTimer()
+    this.setData({ favoriteOnly: !this.data.favoriteOnly })
+    void this.load()
+  },
+
+  onSearchChange(event: DetailEvent<string>): void {
+    this.setData({ search: event.detail })
     clearSearchTimer()
     searchTimer = setTimeout(() => {
       searchTimer = null
@@ -110,7 +137,7 @@ Page({
     void this.load()
   },
 
-  clearSearch(): void {
+  onSearchClear(): void {
     clearSearchTimer()
     this.setData({ search: '' })
     void this.load()
@@ -121,89 +148,59 @@ Page({
     const dish = this.data.dishes.find((item) => item.id === dishId)
     if (!dish || this.data.submittingCart) return
     if (dish.ordered) {
-      wx.showToast({ title: '这道菜已在今日点餐中', icon: 'none' })
+      toast('这道菜已在今日点餐中')
       return
     }
-    const cartItems = dish.selected
+    this.applyCart(dish.selected
       ? this.data.cartItems.filter((item) => item.id !== dishId)
-      : [...this.data.cartItems, dish]
-    const selectedDishIds = new Set(cartItems.map((item) => item.id))
-    this.setData({
-      cartItems,
-      dishes: this.data.dishes.map((item) => ({ ...item, selected: selectedDishIds.has(item.id) }))
-    })
+      : [...this.data.cartItems, dish])
   },
 
   openCart(): void {
-    this.setData({ showCart: true })
+    if (this.data.cartItems.length) this.setData({ showCart: true })
   },
 
   closeCart(): void {
-    if (this.data.submittingCart) return
-    this.setData({ showCart: false })
-  },
-
-  keepCartOpen(): void {
-    // Catch the sheet tap so it does not bubble to the mask and close it.
+    if (!this.data.submittingCart) this.setData({ showCart: false })
   },
 
   removeCartItem(event: WechatMiniprogram.TouchEvent): void {
     if (this.data.submittingCart) return
     const dishId = Number(event.currentTarget.dataset.id)
-    const cartItems = this.data.cartItems.filter((item) => item.id !== dishId)
-    this.setData({
-      cartItems,
-      dishes: this.data.dishes.map((item) => item.id === dishId ? { ...item, selected: false } : item)
-    })
+    this.applyCart(this.data.cartItems.filter((item) => item.id !== dishId))
   },
 
   clearCart(): void {
-    if (this.data.submittingCart) return
-    this.setData({
-      cartItems: [],
-      dishes: this.data.dishes.map((item) => ({ ...item, selected: false }))
-    })
+    if (!this.data.submittingCart) this.applyCart([])
   },
 
   async submitCart(): Promise<void> {
     if (!this.data.cartItems.length || this.data.submittingCart) return
     const selected = [...this.data.cartItems]
-    const selectedDishIds = new Set(selected.map((item) => item.id))
     this.setData({ submittingCart: true })
     try {
       for (const dish of selected) {
         await addOrderItem(dish.id)
       }
-      this.setData({
-        cartItems: [],
-        showCart: false,
-        submittingCart: false,
-        dishes: this.data.dishes.map((item) => ({
-          ...item,
-          ordered: item.ordered || selectedDishIds.has(item.id),
-          selected: false
-        }))
-      })
-      wx.showToast({ title: `已加入 ${selected.length} 道菜`, icon: 'success' })
-      void this.load()
+      this.setData({ submittingCart: false, showCart: false })
+      this.applyCart([])
+      toast(`已加入 ${selected.length} 道菜`, 'success')
     } catch (error) {
       this.setData({ submittingCart: false })
-      void this.load()
-      wx.showToast({ title: error instanceof ApiError ? error.message : '加入失败，请重试', icon: 'none' })
+      toast(errorText(error, '加入失败，请重试'))
     }
+    void this.load()
   },
 
   async toggleFavorite(event: WechatMiniprogram.TouchEvent): Promise<void> {
     const dishId = Number(event.currentTarget.dataset.id)
     try {
       const updated = await toggleFavorite(dishId)
-      const current = this.data.dishes.find((dish) => dish.id === updated.id)
-      const dishes = this.data.dishes.map((dish) => dish.id === updated.id
-        ? { ...updated, ordered: current?.ordered || false, selected: current?.selected || false }
-        : dish)
-      this.setData({ dishes })
+      this.setData({
+        dishes: this.data.dishes.map((dish) => dish.id === updated.id ? { ...dish, isFavorite: updated.isFavorite } : dish)
+      })
     } catch (error) {
-      wx.showToast({ title: error instanceof ApiError ? error.message : '操作失败', icon: 'none' })
+      toast(errorText(error, '操作失败'))
     }
   },
 
@@ -212,8 +209,7 @@ Page({
   },
 
   openEdit(event: WechatMiniprogram.TouchEvent): void {
-    const dishId = Number(event.currentTarget.dataset.id)
-    wx.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${dishId}` })
+    wx.navigateTo({ url: `/pages/dish-edit/dish-edit?id=${Number(event.currentTarget.dataset.id)}` })
   },
 
   goFamily(): void {

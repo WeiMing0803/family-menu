@@ -1,44 +1,88 @@
-<navigation-bar title="家庭管理" back="{{false}}" color="#332b26" background="#f8f5f1"></navigation-bar>
-<view class="page page-content">
-  <view class="family-heading">
-    <text class="title">我们的小家</text>
-    <text class="muted">邀请家人，一起决定今天吃什么。</text>
+<navigation-bar title="" back="{{false}}" background="#F7F5EE"></navigation-bar>
+<view class="page">
+  <view class="page-header">
+    <view>
+      <text class="page-eyebrow">{{family ? '和家人共享菜单' : '还没有加入家庭'}}</text>
+      <text class="page-title">家庭</text>
+    </view>
   </view>
-  <view wx:if="{{errorMessage}}" class="error-text">
+
+  <view wx:if="{{errorMessage}}" class="error-banner">
     <text>{{errorMessage}}</text>
-    <button class="secondary-button small-button" bindtap="load">重试加载</button>
+    <van-button wx:if="{{!family && !busy}}" size="small" round plain type="danger" bind:click="load">刷新</van-button>
   </view>
-  <view wx:elif="{{loading}}" class="empty-card"><text>正在读取家庭信息…</text></view>
-  <block wx:elif="{{!family}}">
-    <view class="form-card">
-      <text class="card-title">创建家庭</text>
-      <input value="{{familyName}}" placeholder="家庭名称（默认：我们的家）" maxlength="100" bindinput="onFamilyNameInput" />
-      <button class="primary-button" loading="{{busy}}" disabled="{{busy}}" bindtap="create">创建家庭</button>
+
+  <view wx:if="{{loading}}" class="loading-state">
+    <van-loading size="36rpx" color="#86918A" />
+    <text>正在读取家庭信息…</text>
+  </view>
+
+  <view wx:elif="{{!family}}" class="setup {{fromInvite ? 'join-first' : ''}}">
+    <view class="setup-card create-card">
+      <view class="setup-heading">
+        <view class="setup-icon"><van-icon name="wap-home-o" size="40rpx" /></view>
+        <view>
+          <text class="setup-title">创建新家庭</text>
+          <text class="setup-desc">创建后把邀请码发给家人</text>
+        </view>
+      </view>
+      <view class="field-box">
+        <van-field value="{{familyName}}" placeholder="家庭名称（默认：我们的家）" maxlength="{{100}}" border="{{false}}" clearable bind:change="onFamilyNameChange" />
+      </view>
+      <van-button type="primary" round block loading="{{busy}}" bind:click="create">创建家庭</van-button>
     </view>
-    <view class="form-card join-card">
-      <text class="card-title">加入家庭</text>
-      <input value="{{inviteCode}}" placeholder="输入 6 位邀请码" maxlength="6" bindinput="onInviteCodeInput" />
-      <button class="secondary-button" loading="{{busy}}" disabled="{{busy}}" bindtap="join">加入家庭</button>
+
+    <view class="setup-divider"><text>或者</text></view>
+
+    <view class="setup-card join-card">
+      <view class="setup-heading">
+        <view class="setup-icon"><van-icon name="friends-o" size="40rpx" /></view>
+        <view>
+          <text class="setup-title">加入家人的家庭</text>
+          <text class="setup-desc">{{fromInvite ? '已从邀请链接填好邀请码' : '输入家人分享的 6 位邀请码'}}</text>
+        </view>
+      </view>
+      <view class="field-box">
+        <van-field value="{{inviteCode}}" placeholder="例如 AB23CD" maxlength="{{6}}" border="{{false}}" clearable input-class="invite-input" bind:change="onInviteCodeChange" />
+      </view>
+      <van-button type="primary" round block plain="{{!fromInvite}}" loading="{{busy}}" bind:click="join">加入家庭</van-button>
     </view>
-  </block>
+  </view>
+
   <block wx:else>
     <view class="invite-card">
-      <text class="muted">家庭邀请码</text>
-      <view class="invite-row">
-        <text class="invite-code">{{family.inviteCode}}</text>
-        <button bindtap="copyInviteCode">复制</button>
+      <text class="invite-family">{{family.name}}</text>
+      <text class="invite-label">家庭邀请码</text>
+      <text class="invite-code" bindlongpress="copyInviteCode">{{family.inviteCode}}</text>
+      <view class="invite-actions">
+        <view class="invite-action">
+          <van-button round block plain color="#FFFFFF" icon="description" bind:click="copyInviteCode">复制邀请码</van-button>
+        </view>
+        <view class="invite-action">
+          <van-button round block open-type="share" icon="share-o" custom-style="color: #1F5A3B; background: #FFFFFF; border-color: #FFFFFF;">分享给家人</van-button>
+        </view>
       </view>
-      <text class="muted">把邀请码发给家人即可加入（最多 2 人）</text>
     </view>
-    <view class="members-card">
-      <view class="card-header"><text class="card-title">家庭成员</text><text class="muted">{{members.length}} 人</text></view>
+
+    <view class="section-title"><text>家庭成员</text><text class="section-hint">{{members.length}}/{{maxMembers}}</text></view>
+    <view class="card member-card">
       <view wx:for="{{members}}" wx:key="id" class="member-row">
-        <view class="avatar-placeholder">{{item.initial}}</view>
-        <view><text class="member-name">{{item.nickName}}<text wx:if="{{item.isMe}}" class="me-tag">我</text></text><text class="muted member-date">已加入</text></view>
+        <view class="member-avatar {{item.isMe ? 'me' : ''}}">{{item.initial}}</view>
+        <text class="member-name">{{item.nickName}}</text>
+        <van-tag wx:if="{{item.isMe}}" type="primary" plain round>我</van-tag>
       </view>
-      <text wx:if="{{members.length < 2}}" class="muted waiting-hint">等待家人用邀请码加入…</text>
+      <view wx:if="{{members.length < maxMembers}}" class="member-row waiting">
+        <view class="member-avatar placeholder"><van-icon name="plus" /></view>
+        <view class="waiting-text">
+          <text class="member-name">等待家人加入</text>
+          <text class="muted">分享邀请码后，对方点开即可加入</text>
+        </view>
+      </view>
     </view>
-    <button class="leave-button" disabled="{{busy}}" bindtap="leave">退出家庭</button>
   </block>
-  <button wx:if="{{!loading}}" class="danger-button" bindtap="signOut">{{signOutText}}</button>
+
+  <view wx:if="{{!loading}}" class="card settings-card">
+    <van-cell wx:if="{{family}}" title="退出家庭" icon="revoke" is-link border="{{false}}" title-style="color: #C8553D" bind:click="leave" />
+    <van-cell title="{{signOutText}}" icon="exchange" is-link border="{{false}}" bind:click="signOut" />
+  </view>
 </view>
