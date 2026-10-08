@@ -165,9 +165,12 @@ ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations add <迁移名称> -o Da
 3. API 使用 HTTPS，SignalR 使用 WSS；在微信公众平台把后端域名加入 request 和 socket 合法域名。
 4. 如果部署在反向代理后面，在 `ForwardedHeaders:KnownProxies` 中填写代理地址。
 
+完整的服务器部署（Ubuntu + Nginx + HTTPS）和小程序发布步骤见 [上线部署指南](docs/上线部署指南.md)。
+
 ## 相关文档
 
 - [项目设计文档](docs/项目设计文档.md)
 - [实施计划](docs/IMPLEMENTATION_PLAN.md)
 - [双机联调测试指南](docs/双机联调测试指南.md)
+- [上线部署指南](docs/上线部署指南.md)：Ubuntu 服务器部署、Nginx 反向代理、阿里云 SSL 证书、小程序发布
 - [小程序说明](miniprogram/README.md)：页面结构、样式约定、实时连接细节
