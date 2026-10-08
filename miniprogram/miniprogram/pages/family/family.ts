@@ -9,7 +9,9 @@ import type { DetailEvent } from '../../utils/ui'
 const app = getApp<IAppOption>()
 let unsubscribeFamilyChanges: (() => void) | null = null
 
-const MAX_MEMBERS = 2
+// 与后端 Family.MinMemberLimit / MaxMemberLimit 保持一致。
+const MEMBER_LIMIT_OPTIONS = [2, 3, 4, 5]
+const DEFAULT_MEMBER_LIMIT = 2
 const INVITE_CODE_PATTERN = /^[A-Za-z2-9]{6}$/
 
 type MemberView = MemberResponse & { initial: string; isMe: boolean }
@@ -21,7 +23,10 @@ Page({
     errorMessage: '',
     family: null as FamilyResponse | null,
     members: [] as MemberView[],
-    maxMembers: MAX_MEMBERS,
+    maxMembers: DEFAULT_MEMBER_LIMIT,
+    isFull: false,
+    memberLimitOptions: MEMBER_LIMIT_OPTIONS,
+    memberLimit: DEFAULT_MEMBER_LIMIT,
     familyName: '',
     inviteCode: '',
     fromInvite: false,
@@ -52,7 +57,8 @@ Page({
 
   onShareAppMessage() {
     const family = this.data.family
-    if (!family) return { title: '家庭点餐：和家人一起决定今天吃什么', path: '/pages/index/index' }
+    // 满员时邀请码已隐藏，右上角转发也不再带邀请码。
+    if (!family || this.data.isFull) return { title: '家庭点餐：和家人一起决定今天吃什么', path: '/pages/index/index' }
     return {
       title: `邀请你加入「${family.name}」，一起决定今天吃什么`,
       path: `/pages/family/family?inviteCode=${family.inviteCode}`
@@ -85,7 +91,14 @@ Page({
         initial: nameInitial(member.nickName),
         isMe: member.id === auth.user.id
       }))
-      this.setData({ loading: false, family, members, fromInvite: false })
+      this.setData({
+        loading: false,
+        family,
+        members,
+        maxMembers: family.maxMembers,
+        isFull: members.length >= family.maxMembers,
+        fromInvite: false
+      })
     } catch (error) {
       if (isUnauthorized(error)) {
         wx.reLaunch({ url: '/pages/login/login' })
@@ -99,12 +112,16 @@ Page({
     this.setData({ familyName: event.detail })
   },
 
+  onMemberLimitTap(event: WechatMiniprogram.TouchEvent): void {
+    this.setData({ memberLimit: Number(event.currentTarget.dataset.value) })
+  },
+
   onInviteCodeChange(event: DetailEvent<string>): void {
     this.setData({ inviteCode: event.detail.toUpperCase() })
   },
 
   async create(): Promise<void> {
-    await this.mutateFamily(() => createFamily(this.data.familyName), '家庭已创建')
+    await this.mutateFamily(() => createFamily(this.data.familyName, this.data.memberLimit), '家庭已创建')
   },
 
   async join(): Promise<void> {
@@ -154,7 +171,7 @@ Page({
       await stopRealtime()
       app.globalData.family = null
       toast('已退出家庭', 'success')
-      this.setData({ family: null, members: [] })
+      this.setData({ family: null, members: [], isFull: false })
       await this.load()
     } catch (error) {
       this.setData({ busy: false, errorMessage: errorText(error, '操作失败') })

@@ -2,11 +2,17 @@ namespace FamilyMenu.Api.Models.Entities;
 
 public sealed class Family
 {
+    public const int MinMemberLimit = 2;
+
+    public const int MaxMemberLimit = 5;
+
     public int Id { get; set; }
 
     public string Name { get; set; } = "我们的家";
 
     public string InviteCode { get; set; } = string.Empty;
+
+    public int MaxMembers { get; set; } = MinMemberLimit;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

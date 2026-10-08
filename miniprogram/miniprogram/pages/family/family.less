@@ -62,6 +62,40 @@
   font-weight: 600;
 }
 
+.limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.limit-label {
+  color: var(--c-text-2);
+  font-size: 26rpx;
+}
+
+.limit-options {
+  display: flex;
+  gap: 12rpx;
+}
+
+.limit-option {
+  min-width: 88rpx;
+  padding: 12rpx 0;
+  border-radius: 999rpx;
+  color: var(--c-text-2);
+  background: var(--c-bg);
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.limit-option.active {
+  color: #fff;
+  background: var(--c-primary);
+  font-weight: 600;
+}
+
 .setup-divider {
   display: flex;
   align-items: center;
@@ -93,6 +127,24 @@
 .invite-family {
   font-size: 34rpx;
   font-weight: 600;
+}
+
+.invite-full {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 28rpx;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, .16);
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.invite-full-hint {
+  margin-top: 16rpx;
+  color: rgba(255, 255, 255, .7);
+  font-size: 24rpx;
 }
 
 .invite-label {

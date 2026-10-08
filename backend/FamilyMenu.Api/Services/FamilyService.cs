@@ -23,7 +23,6 @@ public interface IFamilyService
 
 public sealed class FamilyService(AppDbContext db, IHubContext<FamilyHub> hub) : IFamilyService
 {
-    private const int MaxMembers = 2;
     private const string InviteAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     public async Task<ServiceResult<FamilyResponse>> CreateAsync(int userId, CreateFamilyRequest request, CancellationToken cancellationToken)
@@ -42,7 +41,8 @@ public sealed class FamilyService(AppDbContext db, IHubContext<FamilyHub> hub) :
         var family = new Family
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? "我们的家" : request.Name.Trim(),
-            InviteCode = await CreateInviteCodeAsync(cancellationToken)
+            InviteCode = await CreateInviteCodeAsync(cancellationToken),
+            MaxMembers = request.MaxMembers
         };
         family.Members.Add(user);
         db.Families.Add(family);
@@ -71,7 +71,7 @@ public sealed class FamilyService(AppDbContext db, IHubContext<FamilyHub> hub) :
             return ServiceResult<FamilyResponse>.Fail(StatusCodes.Status404NotFound, "邀请码不存在");
         }
 
-        if (family.Members.Count >= MaxMembers)
+        if (family.Members.Count >= family.MaxMembers)
         {
             return ServiceResult<FamilyResponse>.Fail(StatusCodes.Status409Conflict, "该家庭成员已满");
         }

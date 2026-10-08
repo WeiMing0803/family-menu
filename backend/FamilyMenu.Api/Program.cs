@@ -189,6 +189,15 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
+
+    // EnsureCreated 不会给已有数据库补列：旧库没有 MaxMembers 时补上，原有家庭保持 2 人上限。
+    var familyColumns = await db.Database
+        .SqlQueryRaw<string>("SELECT name AS Value FROM pragma_table_info('Families')")
+        .ToListAsync();
+    if (!familyColumns.Contains("MaxMembers"))
+    {
+        await db.Database.ExecuteSqlRawAsync("ALTER TABLE Families ADD COLUMN MaxMembers INTEGER NOT NULL DEFAULT 2");
+    }
 }
 
 app.Run();

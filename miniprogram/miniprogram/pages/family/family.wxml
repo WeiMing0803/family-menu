@@ -29,6 +29,18 @@
       <view class="field-box">
         <van-field value="{{familyName}}" placeholder="家庭名称（默认：我们的家）" maxlength="{{100}}" border="{{false}}" clearable bind:change="onFamilyNameChange" />
       </view>
+      <view class="limit-row">
+        <text class="limit-label">最多几人</text>
+        <view class="limit-options">
+          <view
+            wx:for="{{memberLimitOptions}}"
+            wx:key="*this"
+            class="limit-option {{item === memberLimit ? 'active' : ''}}"
+            data-value="{{item}}"
+            bindtap="onMemberLimitTap"
+          >{{item}}人</view>
+        </view>
+      </view>
       <van-button type="primary" round block loading="{{busy}}" bind:click="create">创建家庭</van-button>
     </view>
 
@@ -52,16 +64,25 @@
   <block wx:else>
     <view class="invite-card">
       <text class="invite-family">{{family.name}}</text>
-      <text class="invite-label">家庭邀请码</text>
-      <text class="invite-code" bindlongpress="copyInviteCode">{{family.inviteCode}}</text>
-      <view class="invite-actions">
-        <view class="invite-action">
-          <van-button round block plain color="#FFFFFF" icon="description" bind:click="copyInviteCode">复制邀请码</van-button>
+      <block wx:if="{{isFull}}">
+        <view class="invite-full">
+          <van-icon name="passed" size="32rpx" />
+          <text>家庭已满员（{{members.length}}/{{maxMembers}}）</text>
         </view>
-        <view class="invite-action">
-          <van-button round block open-type="share" icon="share-o" custom-style="color: #1F5A3B; background: #FFFFFF; border-color: #FFFFFF;">分享给家人</van-button>
+        <text class="invite-full-hint">有成员退出后，邀请码会重新显示</text>
+      </block>
+      <block wx:else>
+        <text class="invite-label">家庭邀请码</text>
+        <text class="invite-code" bindlongpress="copyInviteCode">{{family.inviteCode}}</text>
+        <view class="invite-actions">
+          <view class="invite-action">
+            <van-button round block plain icon="description" custom-style="color: #FFFFFF; background: transparent; border-color: rgba(255, 255, 255, .7);" bind:click="copyInviteCode">复制邀请码</van-button>
+          </view>
+          <view class="invite-action">
+            <van-button round block open-type="share" icon="share-o" custom-style="color: #1F5A3B; background: #FFFFFF; border-color: #FFFFFF;">分享给家人</van-button>
+          </view>
         </view>
-      </view>
+      </block>
     </view>
 
     <view class="section-title"><text>家庭成员</text><text class="section-hint">{{members.length}}/{{maxMembers}}</text></view>
@@ -71,7 +92,7 @@
         <text class="member-name">{{item.nickName}}</text>
         <van-tag wx:if="{{item.isMe}}" type="primary" plain round>我</van-tag>
       </view>
-      <view wx:if="{{members.length < maxMembers}}" class="member-row waiting">
+      <view wx:if="{{!isFull}}" class="member-row waiting">
         <view class="member-avatar placeholder"><van-icon name="plus" /></view>
         <view class="waiting-text">
           <text class="member-name">等待家人加入</text>

@@ -18,6 +18,7 @@ export interface FamilyResponse {
   inviteCode: string
   createdAt: string
   memberCount: number
+  maxMembers: number
 }
 
 export interface MemberResponse {

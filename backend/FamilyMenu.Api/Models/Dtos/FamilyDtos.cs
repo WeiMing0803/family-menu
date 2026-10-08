@@ -7,6 +7,9 @@ public sealed class CreateFamilyRequest
 {
     [StringLength(100)]
     public string? Name { get; set; }
+
+    [Range(Family.MinMemberLimit, Family.MaxMemberLimit, ErrorMessage = "家庭人数需在 2 到 5 人之间")]
+    public int MaxMembers { get; set; } = Family.MinMemberLimit;
 }
 
 public sealed class JoinFamilyRequest
@@ -22,10 +25,11 @@ public sealed record FamilyResponse(
     string Name,
     string InviteCode,
     DateTime CreatedAt,
-    int MemberCount)
+    int MemberCount,
+    int MaxMembers)
 {
     public static FamilyResponse FromEntity(Family family) =>
-        new(family.Id, family.Name, family.InviteCode, family.CreatedAt, family.Members.Count);
+        new(family.Id, family.Name, family.InviteCode, family.CreatedAt, family.Members.Count, family.MaxMembers);
 }
 
 public sealed record MemberResponse(

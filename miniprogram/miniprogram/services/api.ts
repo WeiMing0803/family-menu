@@ -107,10 +107,10 @@ export function getMembers(): Promise<MemberResponse[]> {
   return request<MemberResponse[]>('/family/members')
 }
 
-export function createFamily(name?: string): Promise<FamilyResponse> {
+export function createFamily(name: string | undefined, maxMembers: number): Promise<FamilyResponse> {
   return request<FamilyResponse>('/family/create', {
     method: 'POST',
-    data: { name: name?.trim() || undefined }
+    data: { name: name?.trim() || undefined, maxMembers }
   })
 }
 
