@@ -35,4 +35,16 @@ public sealed class AuthController(IAuthService authService) : FamilyMenuControl
         var user = await authService.GetCurrentUserAsync(UserId.Value, cancellationToken);
         return user is null ? UnauthorizedProblem() : Ok(user);
     }
+
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<ActionResult<UserResponse>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+        if (!UserId.HasValue)
+        {
+            return UnauthorizedProblem();
+        }
+
+        return await ExecuteAsync(() => authService.UpdateProfileAsync(UserId.Value, request, cancellationToken));
+    }
 }

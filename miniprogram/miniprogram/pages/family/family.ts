@@ -1,9 +1,9 @@
 import { createFamily, getFamilyOrNull, getMembers, joinFamily, leaveFamily } from '../../services/api'
-import { login, logout } from '../../services/auth'
+import { login, logout, refreshCurrentUser, updateNickName } from '../../services/auth'
 import { LOGIN_MODE, STORAGE_KEYS } from '../../services/config'
 import type { FamilyResponse, MemberResponse } from '../../services/models'
 import { startRealtime, stopRealtime, subscribeRealtime } from '../../services/realtime'
-import { confirmAction, errorText, isUnauthorized, nameInitial, toast } from '../../utils/ui'
+import { confirmAction, errorText, isUnauthorized, nameInitial, promptText, toast } from '../../utils/ui'
 import type { DetailEvent } from '../../utils/ui'
 
 const app = getApp<IAppOption>()
@@ -13,6 +13,8 @@ let unsubscribeFamilyChanges: (() => void) | null = null
 const MEMBER_LIMIT_OPTIONS = [2, 3, 4, 5]
 const DEFAULT_MEMBER_LIMIT = 2
 const INVITE_CODE_PATTERN = /^[A-Za-z2-9]{6}$/
+// 与后端 UpdateProfileRequest 的长度限制保持一致。
+const MAX_NICKNAME_LENGTH = 20
 
 type MemberView = MemberResponse & { initial: string; isMe: boolean }
 
@@ -27,6 +29,8 @@ Page({
     isFull: false,
     memberLimitOptions: MEMBER_LIMIT_OPTIONS,
     memberLimit: DEFAULT_MEMBER_LIMIT,
+    needsNickName: false,
+    nickNameDraft: '',
     familyName: '',
     inviteCode: '',
     fromInvite: false,
@@ -68,15 +72,16 @@ Page({
   async load(): Promise<void> {
     this.setData({ loading: !this.data.family && !this.data.members.length, busy: false, errorMessage: '' })
     try {
-      const auth = await login()
-      app.globalData.user = auth.user
-      const family = await getFamilyOrNull()
+      await login()
+      const [user, family] = await Promise.all([refreshCurrentUser(), getFamilyOrNull()])
+      app.globalData.user = user
       app.globalData.family = family
       if (!family) {
         void stopRealtime()
         const pending = wx.getStorageSync(STORAGE_KEYS.pendingInvite) as string | undefined
         this.setData({
           loading: false,
+          needsNickName: user.needsNickName,
           family: null,
           members: [],
           inviteCode: pending || this.data.inviteCode,
@@ -89,10 +94,11 @@ Page({
       const members = (await getMembers()).map((member) => ({
         ...member,
         initial: nameInitial(member.nickName),
-        isMe: member.id === auth.user.id
+        isMe: member.id === user.id
       }))
       this.setData({
         loading: false,
+        needsNickName: user.needsNickName,
         family,
         members,
         maxMembers: family.maxMembers,
@@ -110,6 +116,53 @@ Page({
 
   onFamilyNameChange(event: DetailEvent<string>): void {
     this.setData({ familyName: event.detail })
+  },
+
+  // type="nickname" 的输入框选用微信昵称时，部分机型只触发 blur 不触发 input，两个事件都接上。
+  onNickNameInput(event: WechatMiniprogram.CustomEvent<{ value: string }>): void {
+    this.setData({ nickNameDraft: event.detail.value })
+  },
+
+  onNickNameReview(event: WechatMiniprogram.CustomEvent<{ pass: boolean }>): void {
+    if (event.detail.pass) return
+    this.setData({ nickNameDraft: '' })
+    toast('昵称未通过微信安全检测，请换一个')
+  },
+
+  async saveNickName(): Promise<void> {
+    await this.submitNickName(this.data.nickNameDraft)
+  },
+
+  async onMemberTap(event: WechatMiniprogram.TouchEvent): Promise<void> {
+    if (!event.currentTarget.dataset.me) return
+    const me = this.data.members.find((member) => member.isMe)
+    if (!me || this.data.busy) return
+    const value = await promptText('修改昵称', me.nickName, '家人会看到这个名字')
+    if (value === null || value.trim() === me.nickName) return
+    await this.submitNickName(value)
+  },
+
+  async submitNickName(value: string): Promise<void> {
+    const nickName = value.trim()
+    if (!nickName) {
+      toast('请填写昵称')
+      return
+    }
+    if (nickName.length > MAX_NICKNAME_LENGTH) {
+      toast(`昵称最多 ${MAX_NICKNAME_LENGTH} 个字`)
+      return
+    }
+    if (this.data.busy) return
+    this.setData({ busy: true })
+    try {
+      app.globalData.user = await updateNickName(nickName)
+      toast('昵称已保存', 'success')
+      this.setData({ nickNameDraft: '' })
+      await this.load()
+    } catch (error) {
+      this.setData({ busy: false })
+      toast(errorText(error, '保存失败'))
+    }
   },
 
   onMemberLimitTap(event: WechatMiniprogram.TouchEvent): void {

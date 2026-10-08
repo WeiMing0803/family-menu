@@ -12,6 +12,30 @@
     <van-button wx:if="{{!family && !busy}}" size="small" round plain type="danger" bind:click="load">刷新</van-button>
   </view>
 
+  <view wx:if="{{!loading && needsNickName}}" class="nickname-card">
+    <view class="setup-heading">
+      <view class="setup-icon"><van-icon name="contact-o" size="40rpx" /></view>
+      <view>
+        <text class="setup-title">先设置你的昵称</text>
+        <text class="setup-desc">家人会在成员列表和点餐记录里看到它</text>
+      </view>
+    </view>
+    <view class="nickname-form">
+      <input
+        class="nickname-input"
+        type="nickname"
+        value="{{nickNameDraft}}"
+        placeholder="点击输入，或选择微信昵称"
+        placeholder-class="nickname-placeholder"
+        maxlength="{{20}}"
+        bindinput="onNickNameInput"
+        bindblur="onNickNameInput"
+        bindnicknamereview="onNickNameReview"
+      />
+      <van-button type="primary" round size="small" loading="{{busy}}" bind:click="saveNickName">保存</van-button>
+    </view>
+  </view>
+
   <view wx:if="{{loading}}" class="loading-state">
     <van-loading size="36rpx" color="#86918A" />
     <text>正在读取家庭信息…</text>
@@ -87,10 +111,11 @@
 
     <view class="section-title"><text>家庭成员</text><text class="section-hint">{{members.length}}/{{maxMembers}}</text></view>
     <view class="card member-card">
-      <view wx:for="{{members}}" wx:key="id" class="member-row">
+      <view wx:for="{{members}}" wx:key="id" class="member-row" data-me="{{item.isMe}}" bindtap="onMemberTap">
         <view class="member-avatar {{item.isMe ? 'me' : ''}}">{{item.initial}}</view>
         <text class="member-name">{{item.nickName}}</text>
         <van-tag wx:if="{{item.isMe}}" type="primary" plain round>我</van-tag>
+        <van-icon wx:if="{{item.isMe}}" name="edit" size="32rpx" color="#86918A" />
       </view>
       <view wx:if="{{!isFull}}" class="member-row waiting">
         <view class="member-avatar placeholder"><van-icon name="plus" /></view>

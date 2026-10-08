@@ -4,9 +4,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FamilyMenu.Api.Data;
+using FamilyMenu.Api.Hubs;
 using FamilyMenu.Api.Models.Dtos;
 using FamilyMenu.Api.Models.Entities;
 using FamilyMenu.Api.Options;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -18,10 +20,13 @@ public interface IAuthService
     Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
 
     Task<UserResponse?> GetCurrentUserAsync(int userId, CancellationToken cancellationToken);
+
+    Task<ServiceResult<UserResponse>> UpdateProfileAsync(int userId, UpdateProfileRequest request, CancellationToken cancellationToken);
 }
 
 public sealed class AuthService(
     AppDbContext db,
+    IHubContext<FamilyHub> hub,
     IHttpClientFactory httpClientFactory,
     IOptions<JwtOptions> jwtOptions,
     IOptions<WechatOptions> wechatOptions,
@@ -45,7 +50,7 @@ public sealed class AuthService(
             user = new User
             {
                 OpenId = openId,
-                NickName = string.IsNullOrWhiteSpace(request.NickName) ? "家庭成员" : request.NickName.Trim(),
+                NickName = string.IsNullOrWhiteSpace(request.NickName) ? User.DefaultNickName : request.NickName.Trim(),
                 AvatarUrl = request.AvatarUrl?.Trim()
             };
             db.Users.Add(user);
@@ -72,6 +77,27 @@ public sealed class AuthService(
     {
         var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
         return user is null ? null : UserResponse.FromEntity(user);
+    }
+
+    public async Task<ServiceResult<UserResponse>> UpdateProfileAsync(int userId, UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+        var user = await db.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return ServiceResult<UserResponse>.Fail(StatusCodes.Status401Unauthorized, "用户不存在或登录已失效");
+        }
+
+        user.NickName = request.NickName.Trim();
+        await db.SaveChangesAsync(cancellationToken);
+
+        // 成员列表、今日页的「谁点的」都显示昵称，通知家人刷新。
+        if (user.FamilyId.HasValue)
+        {
+            await hub.Clients.Group(FamilyHub.GroupName(user.FamilyId.Value))
+                .SendAsync("FamilyChanged", new { action = "memberUpdated", resourceId = user.Id }, cancellationToken);
+        }
+
+        return ServiceResult<UserResponse>.Ok(UserResponse.FromEntity(user));
     }
 
     private async Task<string?> ResolveOpenIdAsync(LoginRequest request, CancellationToken cancellationToken)

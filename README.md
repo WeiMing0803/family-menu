@@ -14,7 +14,7 @@
 | 今日 | 查看今天点了哪些菜，按「想吃 / 已做完 / 不吃了」分组；标记状态、添加备注、删除、清空今日点餐 |
 | 菜单 | 按分类和「喜欢」筛选、搜索菜品；勾选后加入今日点餐；新增、编辑、删除菜品 |
 | 历史 | 近 7 天常吃榜，按天查看过去的点餐记录 |
-| 家庭 | 创建家庭（可设置 2–5 人上限）、用 6 位邀请码或分享链接邀请家人加入、查看成员、退出家庭 |
+| 家庭 | 创建家庭（可设置 2–5 人上限）、用 6 位邀请码或分享链接邀请家人加入、查看成员、设置或修改自己的昵称、退出家庭 |
 
 任何一位家人新增菜品、点菜或修改状态，其他人的页面都会自动刷新，不需要下拉刷新。
 
@@ -34,13 +34,14 @@
 family-menu/
 ├── backend/
 │   ├── FamilyMenu.Backend.sln
+│   ├── dotnet-tools.json     # 本地工具清单（dotnet-ef）
 │   └── FamilyMenu.Api/
 │       ├── Controllers/      # auth / family / dishes / orders 接口
 │       ├── Services/         # 业务逻辑（家庭、菜品、点餐、登录）
 │       ├── Hubs/FamilyHub.cs # SignalR Hub，按家庭分组推送变更
 │       ├── Models/           # 实体与 DTO
-│       ├── Data/             # EF Core DbContext
-│       └── Program.cs        # 依赖注入、认证、启动时建库
+│       ├── Data/             # EF Core DbContext、迁移文件、启动时执行迁移
+│       └── Program.cs        # 依赖注入、认证、启动入口
 ├── miniprogram/
 │   ├── project.config.json   # 用微信开发者工具打开 miniprogram/ 这一层
 │   ├── scripts/              # SignalR CommonJS 适配脚本
@@ -67,7 +68,7 @@ dotnet run
 ```
 
 - 默认监听 `http://0.0.0.0:5080`，以 Development 环境运行。
-- 首次启动会在当前目录自动创建 SQLite 数据库 `family.db`，无需手动建库或执行迁移。
+- 启动时会自动执行数据库迁移：首次启动在当前目录创建 SQLite 数据库 `family.db`，之后有新迁移时自动升级，无需手动执行。
 - 浏览器打开 `http://localhost:5080/health`，看到 `Healthy` 即启动成功。
 - Development 环境下可以在 `http://localhost:5080/openapi/v1.json` 查看接口定义。
 
@@ -126,13 +127,32 @@ dotnet user-secrets set "Wechat:AppSecret" "你的AppSecret"
 
 环境变量写法用双下划线代替冒号，例如 `Jwt__Secret`。
 
+## 数据库迁移
+
+表结构由 EF Core Migration 管理，迁移文件在 [`backend/FamilyMenu.Api/Data/Migrations/`](backend/FamilyMenu.Api/Data/Migrations)，后端启动时会自动执行尚未应用的迁移。
+
+修改了实体或 `AppDbContext` 之后，生成一个新迁移并提交到仓库：
+
+```bash
+cd backend
+dotnet tool restore
+cd FamilyMenu.Api
+ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations add <迁移名称> -o Data/Migrations
+```
+
+- `dotnet tool restore` 会按 `backend/dotnet-tools.json` 安装项目固定版本的 `dotnet-ef`，只需执行一次。
+- 需要设置 `ASPNETCORE_ENVIRONMENT=Development`，否则读不到开发环境的 JWT 密钥，`dotnet ef` 会启动失败。PowerShell 中先执行 `$env:ASPNETCORE_ENVIRONMENT = "Development"`。
+- 用 `dotnet ef migrations has-pending-model-changes` 可以检查模型是否有改动还没生成迁移。
+- 早期版本用 `EnsureCreated` 建的旧数据库会在第一次启动时自动登记为初始迁移，数据保持不变。
+- 升级正式环境前，先停掉后端，再备份 `family.db`（如果同目录有 `family.db-wal`、`family.db-shm`，也一起备份）。
+
 ## 接口概览
 
 除登录外，所有接口都需要在请求头携带 `Authorization: Bearer <token>`。
 
 | 模块 | 接口 |
 |---|---|
-| 登录 | `POST /api/auth/login`、`GET /api/auth/me` |
+| 登录 | `POST /api/auth/login`、`GET /api/auth/me`、`PUT /api/auth/profile`（修改昵称） |
 | 家庭 | `GET /api/family`、`POST /api/family/create`、`POST /api/family/join`、`POST /api/family/leave`、`GET /api/family/members` |
 | 菜品 | `GET /api/dishes`、`POST /api/dishes`、`PUT /api/dishes/{id}`、`DELETE /api/dishes/{id}`、`PUT /api/dishes/{id}/favorite` |
 | 点餐 | `GET /api/orders/today`、`POST /api/orders/items`、`PUT /api/orders/items/{id}`、`DELETE /api/orders/items/{id}`、`POST /api/orders/clear`、`GET /api/orders/history`、`GET /api/orders/stats` |

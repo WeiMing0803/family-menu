@@ -1,6 +1,6 @@
 import { LOGIN_MODE, STORAGE_KEYS } from './config'
 import { ApiError, request } from './api'
-import type { AuthResponse } from './models'
+import type { AuthResponse, UserResponse } from './models'
 import { stopRealtime } from './realtime'
 
 export interface DevelopmentIdentity {
@@ -58,6 +58,22 @@ export async function login(force = false): Promise<AuthResponse> {
   wx.setStorageSync(STORAGE_KEYS.token, result.token)
   wx.setStorageSync(STORAGE_KEYS.user, result.user)
   return result
+}
+
+/** 重新读取当前用户：本地缓存的用户信息可能已在其他设备上修改过。 */
+export async function refreshCurrentUser(): Promise<UserResponse> {
+  const user = await request<UserResponse>('/auth/me')
+  wx.setStorageSync(STORAGE_KEYS.user, user)
+  return user
+}
+
+export async function updateNickName(nickName: string): Promise<UserResponse> {
+  const user = await request<UserResponse>('/auth/profile', {
+    method: 'PUT',
+    data: { nickName: nickName.trim() }
+  })
+  wx.setStorageSync(STORAGE_KEYS.user, user)
+  return user
 }
 
 export function logout(): void {

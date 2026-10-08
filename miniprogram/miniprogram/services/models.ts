@@ -4,6 +4,8 @@ export interface UserResponse {
   avatarUrl?: string | null
   familyId?: number | null
   createdAt: string
+  /** 微信登录的新用户还没有设置昵称，仍是默认的「家庭成员」 */
+  needsNickName: boolean
 }
 
 export interface AuthResponse {

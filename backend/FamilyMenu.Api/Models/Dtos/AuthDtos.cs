@@ -29,15 +29,23 @@ public sealed class LoginRequest : IValidatableObject
     }
 }
 
+public sealed class UpdateProfileRequest
+{
+    [Required(ErrorMessage = "请填写昵称")]
+    [StringLength(20, ErrorMessage = "昵称最多 20 个字")]
+    public string NickName { get; set; } = string.Empty;
+}
+
 public sealed record UserResponse(
     int Id,
     string NickName,
     string? AvatarUrl,
     int? FamilyId,
-    DateTime CreatedAt)
+    DateTime CreatedAt,
+    bool NeedsNickName)
 {
     public static UserResponse FromEntity(User user) =>
-        new(user.Id, user.NickName, user.AvatarUrl, user.FamilyId, user.CreatedAt);
+        new(user.Id, user.NickName, user.AvatarUrl, user.FamilyId, user.CreatedAt, user.NickName == User.DefaultNickName);
 }
 
 public sealed record AuthResponse(string Token, DateTime ExpiresAt, UserResponse User);

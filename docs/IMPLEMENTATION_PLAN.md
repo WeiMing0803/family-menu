@@ -1,8 +1,8 @@
 # 家庭点餐小程序实施计划
 
 > 依据：`docs/项目设计文档.md` v1.0  
-> 当前状态：阶段四进行中；基础页面/API 联调和 SignalR 客户端实现已完成，新增依赖的 npm 重建及小程序/真机验证待完成
-> 更新时间：2026-09-26
+> 当前状态：阶段四功能已完成，待开发者工具和真机验证；阶段五已完成 EF Core Migration 切换
+> 更新时间：2026-10-08
 
 ## 1. 目标与边界
 
@@ -52,62 +52,52 @@
 ### 阶段五：测试与部署
 
 - [ ] 增加服务层和 API 集成测试
-- [ ] 完成 EF Core Migration 并替换当前的 `EnsureCreated`
+- [x] 完成 EF Core Migration 并替换当前的 `EnsureCreated`
 - [ ] 增加数据库备份、回滚和升级说明
 - [ ] 完成 Oracle Cloud / 微信云托管部署配置
 - [ ] 完成上线前数据、密钥和日志检查
 
-## 6. EF Core Migration 待办记录
+## 6. EF Core Migration 记录
 
-### 当前状态
+### 当前状态（2026-10-08 已完成切换）
 
-当前项目在 `Program.cs` 中使用 `Database.EnsureCreatedAsync()`：
+- 表结构由 EF Core Migration 管理，迁移文件位于 `backend/FamilyMenu.Api/Data/Migrations/`，初始迁移为 `InitialCreate`（包含 `Families.MaxMembers`）。
+- 启动时由 `Data/DatabaseInitializer.cs` 执行 `MigrateAsync()`，不再调用 `EnsureCreatedAsync()`。
+- `dotnet-ef` 固定为 10.0.12，记录在本地工具清单 `backend/dotnet-tools.json`，新环境执行 `dotnet tool restore` 即可。
+- 数据库文件默认位于 `backend/FamilyMenu.Api/family.db`，已加入 `.gitignore`。
 
-- 首次启动时自动创建 SQLite 数据库和数据表。
-- 当前不需要执行数据库脚本或 `dotnet ef database update`。
-- 适合项目早期开发和接口联调。
-- 数据库文件默认位于 `backend/FamilyMenu.Api/family.db`，并已加入 `.gitignore`。
+### 旧数据库的处理
 
-### 后续切换目标
+早期用 `EnsureCreated` 建的数据库有业务表，但没有 `__EFMigrationsHistory`，直接 `Migrate` 会重复建表而失败。`DatabaseInitializer` 在启动时识别这类数据库（有 `Families` 表、没有迁移历史表），在一个事务内：
 
-当实体模型和第一版接口结构稳定后，改用 EF Core Migration：
+1. 如果缺少 `Families.MaxMembers` 列就补上，默认值为 2；
+2. 创建迁移历史表，并把 `InitialCreate` 登记为已执行。
 
-1. 添加 `Microsoft.EntityFrameworkCore.Design` 依赖。
-2. 安装或确认 `dotnet-ef` 工具。
-3. 创建初始迁移，例如：
+之后正常执行后续迁移。表结构自第一版以来只新增过 `MaxMembers`，所以旧库只有“有/没有这一列”两种情况。
 
-   ```powershell
-   dotnet ef migrations add InitialCreate
-   ```
+### 后续模型变更
 
-4. 将迁移文件提交到仓库。
-5. 将启动逻辑从 `EnsureCreatedAsync()` 改为执行迁移：
+```powershell
+cd backend
+dotnet tool restore
+cd FamilyMenu.Api
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet ef migrations add <迁移名称> -o Data/Migrations
+```
 
-   ```csharp
-   await db.Database.MigrateAsync();
-   ```
+- 需要 Development 环境，否则 `Program.cs` 读不到 JWT 密钥会在建 Host 时抛异常。
+- 迁移文件随代码一起提交；部署后由应用启动时自动执行。
+- 用 `dotnet ef migrations has-pending-model-changes` 检查是否有未生成迁移的模型改动。
+- 升级正式环境前先停服务并备份 `family.db`（以及同目录的 `-wal`、`-shm` 文件）；迁移失败时用备份恢复，再回退到上一个版本的程序。
 
-6. 后续模型变更使用新的迁移记录，例如：
+### 验收记录
 
-   ```powershell
-   dotnet ef migrations add AddDishRating
-   dotnet ef database update
-   ```
-
-### 切换时的注意事项
-
-- 不要在已有正式数据库上直接删除 `family.db`。
-- 切换前需要备份 SQLite 数据库。
-- 需要检查现有 `EnsureCreated` 创建的数据库与迁移初始快照是否兼容。
-- 生产环境部署时应明确执行迁移的时机，并准备失败回滚方案。
-- 完成迁移后，更新 `.REMED` 和本节状态，删除“不需要执行数据库脚本”的旧说明。
-
-### 验收标准
-
-- 新环境可以通过 `dotnet ef database update` 创建完整数据库。
-- 现有数据库可以平滑升级，不丢失用户、家庭、菜品和点餐数据。
-- 应用启动不再依赖 `EnsureCreatedAsync()`。
-- 初始迁移和后续迁移文件已纳入 Git。
+- [x] 新库：应用启动时执行 `InitialCreate` 建出完整数据库；再次启动不重复执行。
+- [x] 旧库（无 `MaxMembers`，来自提交 `c590fab`）：启动后补列、登记迁移，原有家庭和菜品保留，家庭上限为 2。
+- [x] 旧库（有 `MaxMembers`，来自提交 `b43b00b`）：登记迁移，数据保留；再次启动不重复执行。
+- [x] `dotnet ef migrations has-pending-model-changes` 确认模型与快照一致。
+- [x] 应用启动不再依赖 `EnsureCreatedAsync()`，迁移文件已纳入仓库。
+- [ ] 尚未单独验证 `dotnet ef database update` 命令行建库（应用启动时执行的是同一套迁移）。
 
 ## 3. 第一阶段的后端设计
 
@@ -145,7 +135,7 @@ backend/FamilyMenu.Api/
 - 需要登录的 API 使用 `Authorization: Bearer <JWT>`
 - 未加入家庭的用户只能访问认证和家庭加入相关接口
 - 所有家庭数据按当前用户的 `FamilyId` 隔离
-- 家庭默认最多两名成员
+- 家庭人数上限在创建时选择（2–5 人，默认 2 人）
 - 变更菜品时广播 `DishChanged`
 - 变更点餐时广播 `OrderChanged`
 - SignalR 地址：`/hubs/family`
@@ -242,3 +232,11 @@ POST /api/auth/login
   - 历史：常吃榜卡片 + 按天时间线，标注今天 / 昨天和每道菜是否做了。
   - 家庭：邀请码大卡片，支持复制和“分享给家人”；从分享链接进入会暂存邀请码，登录后自动填入加入表单。
   - 验证：全部页面通过 TypeScript 检查（仅剩 SignalR 类型声明依赖 DOM 类型、微信类型声明重复两处第三方报错）；静态检查确认 JSON 可解析、WXML 标签闭合、事件处理函数存在、Vant 组件与属性及 16 个图标名均有效。本机没有微信开发者工具，页面实际渲染需在开发者工具和真机上确认。
+
+### 2026-10-08
+
+- 家庭人数上限：创建家庭时可选 2–5 人（默认 2 人），后端按各家庭的 `MaxMembers` 判断是否已满；满员后家庭页隐藏邀请码和分享按钮，右上角转发不再携带邀请码。修复「复制邀请码」按钮白字白底看不清。
+- 修复全项目 `tsc` 报错：补齐 `getApp` 泛型约束；为 SignalR 类型声明补 `XMLHttpRequestResponseType`（不引入 DOM lib）。全项目 `tsc --noEmit` 0 报错。
+- 阶段五：切换到 EF Core Migration，见第 6 节。
+- 微信昵称：微信登录不提供昵称，新用户此前都显示为「家庭成员」。`UserResponse` 新增 `needsNickName`；新增 `PUT /api/auth/profile` 修改昵称（1–20 字，修改后向家庭广播 `FamilyChanged`/`memberUpdated`）。家庭页在需要时显示「设置昵称」卡片（`input type="nickname"`，可选用微信昵称），点击自己的成员行可随时修改。头像需要上传和存储服务，留到与菜品图片一起实现。
+- 验证：`dotnet build` 0 警告 0 错误；用临时 SQLite 验证了昵称接口的校验、去空格、`needsNickName` 状态和 SignalR 推送。小程序页面需要在微信开发者工具和真机上确认。
